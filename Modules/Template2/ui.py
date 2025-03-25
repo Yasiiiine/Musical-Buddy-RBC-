@@ -1,14 +1,20 @@
+# ui.py
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 
-class Screen(QWidget):
-    def __init__(self, number, text=None, color=None):
+import Modules.Template2.config as cfg
+
+
+class Module2Screen(QWidget):
+    def __init__(self):
         super().__init__()
+
         layout = QVBoxLayout()
-        label = QLabel(text if text else str(number))
+
+        label = QLabel(cfg.MODULE_LABEL)
         label.setAlignment(Qt.AlignCenter)
         label.setStyleSheet("font-size: 32px; font-weight: bold;")
+
         layout.addWidget(label)
         self.setLayout(layout)
-        if color:
-            self.setStyleSheet(f"background-color: {color};")
+        self.setStyleSheet(f"background-color: {cfg.MODULE_COLOR};")

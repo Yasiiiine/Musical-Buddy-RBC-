@@ -1,7 +1,14 @@
 from PyQt5.QtWidgets import QMainWindow, QStackedWidget
 from PyQt5.QtCore import Qt
 from screens import Screen
-from calculs import Calcul
+
+from Modules.metronome.ui import MetronomeScreen
+from Modules.Template2.ui import Module2Screen
+from Modules.Template3.ui import Module3Screen
+from Modules.Template4.ui import Module4Screen
+from Modules.Template5.ui import Module5Screen
+from Modules.Template6.ui import Module6Screen
+
 import config
 
 class MainWindow(QMainWindow):
@@ -14,21 +21,26 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
-        # Dictionnaire des écrans avec opérations
-        operation_screens = {
-            1: (Calcul.sum, "Addition"),
-            2: (Calcul.diff, "Soustraction"),
-            3: (Calcul.mult, "Multiplication"),
-            4: (Calcul.div, "Division")
-        }
-
         self.screens = []
+
         for i in range(7):
-            if i in operation_screens:
-                op, label = operation_screens[i]
-                screen = Screen(i, operation=op, label=label)
+            if i == 0:
+                screen = Screen(i, text="Home", color="#e0e0e0")
+            elif i == 1:
+                screen = MetronomeScreen()
+            elif i == 2:
+                screen = Module2Screen()
+            elif i == 3:
+                screen = Module3Screen()
+            elif i == 4:
+                screen = Module4Screen()
+            elif i == 5:
+                screen = Module5Screen()
+            elif i == 6:
+                screen = Module6Screen()
             else:
-                screen = Screen(i)  # écran vierge simple
+                screen = Screen(i, text=f"Module {i}", color="#dddddd")
+
             self.screens.append(screen)
             self.stack.addWidget(screen)
 
@@ -36,12 +48,27 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(self.current_index)
         self.setFocusPolicy(Qt.StrongFocus)
 
+        # Démarre le premier écran si nécessaire
+        current_screen = self.screens[self.current_index]
+        if hasattr(current_screen, "start"):
+            current_screen.start()
+
     def keyPressEvent(self, event):
+        previous_screen = self.screens[self.current_index]
+
         if event.key() == Qt.Key_D:
             self.current_index = (self.current_index + 1) % 7
         elif event.key() == Qt.Key_Q:
             self.current_index = (self.current_index - 1) % 7
         elif event.key() == Qt.Key_Space:
             self.current_index = 0
+
+        next_screen = self.screens[self.current_index]
+
+        if hasattr(previous_screen, "stop"):
+            previous_screen.stop()
+
+        if hasattr(next_screen, "start"):
+            next_screen.start()
 
         self.stack.setCurrentIndex(self.current_index)
