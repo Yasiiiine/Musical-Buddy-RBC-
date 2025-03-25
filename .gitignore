@@ -1,0 +1,20 @@
+# Ignore cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore distribution files
+build/
+dist/
+eggs/
+.eggs/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Ignore venv
+venv/
