@@ -1,19 +1,29 @@
 from scipy.io.wavfile import read
-from scipy.fftpack import fft
+from numpy.fft import fft
 from numpy import argmax, log2
+import numpy as np
+
+notes  = ["A","A#","B","C","C#","D","D#","E","F","F#","G","G#",]
+
+rate, signal = read("ProtestMonoBruitTronque.wav")
+sigTronque = signal
+
+dse = abs((fft(sigTronque)))*2
+dse = dse[:len(dse)//2]
 
 
-notes  = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
+freqMax = argmax(dse)*rate/len(dse)
 
-rate, signal = read("audiofile.wav")
-dse = fft(signal,len(signal))**2
-freqMax = argmax(dse)
-
-freqNorm = freqMax/16.35
+freqNorm = freqMax/440
 ordre = log2(freqNorm)
+res = ordre*12
 
-res = ordre/12
+"""print("freqMax: ", freqMax, " ", rate, "\n")
+print("freqNorm: ", freqNorm, "\n")
+print("ordre: ", ordre, "\n")
+print("res: ", res, "\n")
 
-
+print(round(res)/12)"""
+print("min : ", int(2**((round(res) -0.1)/12)*440), "note: ", notes[round(res)], " max: ", int(2**((round(res) +0.1)/12)*440 + 3))
 
 
