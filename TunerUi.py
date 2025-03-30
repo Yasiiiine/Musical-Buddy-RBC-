@@ -13,6 +13,7 @@ class renderArea(QWidget):
         self.noteTool = NoteFinder()
 
         self.Label = QLabel(text=" ")
+        self.Label.setPixmap(self.pixMap)
         layout = QVBoxLayout()
         layout.addWidget(self.Label)
         self.setLayout(layout)
