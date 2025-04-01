@@ -18,13 +18,16 @@ class Module3Screen(QWidget):
         self.setLayout(layout)
         self.setStyleSheet(f"background-color: {cfg.BG_COLOR};")
 
-        self.setFocusPolicy(Qt.StrongFocus)  # Important pour capter les touches
+        self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:
             self.recorder.toggle_recording()
-            if self.recorder.recording:
-                self.label.setText("🎙️ Enregistrement en cours... (E pour stopper)")
+            if self.recorder.short_recording:
+                self.label.setText("Enregistrement trop court!")
+                self.recorder.short_recording = False
+            elif self.recorder.recording:
+                self.label.setText("Enregistrement en cours... (E pour stopper)")
             else:
-                self.label.setText("✅ Enregistrement sauvegardé ! Appuyez sur E pour recommencer.")
+                self.label.setText("Enregistrement sauvegardé ! Appuyez sur E pour recommencer.")

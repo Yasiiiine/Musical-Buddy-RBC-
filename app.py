@@ -3,7 +3,11 @@ from PyQt5.QtCore import Qt
 from screens import Screen
 
 from Modules.metronome.ui import MetronomeScreen
+<<<<<<< Updated upstream
 from Modules.tuner.ui import renderArea
+=======
+from Modules.Template2.ui import renderArea
+>>>>>>> Stashed changes
 from Modules.enregistrement.ui import Module3Screen
 from Modules.Template4.ui import Module4Screen
 from Modules.Template5.ui import Module5Screen
