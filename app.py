@@ -3,11 +3,9 @@ from PyQt5.QtCore import Qt
 from screens import Screen
 
 from Modules.metronome.ui import MetronomeScreen
-<<<<<<< Updated upstream
 from Modules.tuner.ui import renderArea
-=======
-from Modules.Template2.ui import renderArea
->>>>>>> Stashed changes
+
+#from Modules.Template2.ui import renderArea
 from Modules.enregistrement.ui import Module3Screen
 from Modules.Template4.ui import Module4Screen
 from Modules.Template5.ui import Module5Screen
@@ -29,7 +27,7 @@ class MainWindow(QMainWindow):
 
         for i in range(7):
             if i == 0:
-                screen = Screen(i, text="Home", color="#e0e0e0")
+                screen = Screen(i)
             elif i == 1:
                 screen = MetronomeScreen()
             elif i == 2:

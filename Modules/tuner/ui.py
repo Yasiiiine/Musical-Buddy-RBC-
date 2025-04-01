@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt
 import Modules.tuner.config as cfg
 
 from Modules.tuner.TunerObject import NoteFinder
+from Modules.Parametres.logic import load_background, draw_background
 
 from PyQt5.QtGui import QPixmap,QPen,QBrush,QPaintEvent, QPainter, QColor, QFont
 
@@ -25,11 +26,15 @@ class renderArea(QWidget):
         self.Layout = QVBoxLayout()
         self.Layout.addWidget(self.LabelNote)
 
+        self.image = load_background()
+
         self.setLayout(self.Layout)
         
 
     def paintEvent(self,event):
         painter = QPainter(self)
+
+        draw_background(self, painter, self.image)
 
         pen = QPen(Qt.black)
         pen.setStyle(Qt.PenStyle.NoPen)
