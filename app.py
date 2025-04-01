@@ -8,7 +8,7 @@ from Modules.tuner.ui import renderArea
 #from Modules.Template2.ui import renderArea
 from Modules.enregistrement.ui import Module3Screen
 from Modules.Template4.ui import Module4Screen
-from Modules.Template5.ui import Module5Screen
+from Modules.transcripteurMIDI.ui import Module5Screen
 from Modules.Template6.ui import Module6Screen
 
 import config
