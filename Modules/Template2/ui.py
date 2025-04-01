@@ -60,7 +60,7 @@ class renderArea(QWidget):
                 painter.setBrush(brush)
                 print("Not good !")
                 painter.eraseRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
-                painter.drawRect(self.x(), self.y(), rect.width(), rect.height())
+                painter.drawRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
                 pen.setWidth(30)
                 pen.setColor(Qt.blue)
                 pen.setStyle(Qt.PenStyle.SolidLine)
