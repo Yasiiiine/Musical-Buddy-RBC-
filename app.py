@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 from screens import Screen
 
 from Modules.metronome.ui import MetronomeScreen
-from Modules.Template2.ui import Module2Screen
+from Modules.Template2.ui import renderArea
 from Modules.Template3.ui import Module3Screen
 from Modules.Template4.ui import Module4Screen
 from Modules.Template5.ui import Module5Screen
@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
             elif i == 1:
                 screen = MetronomeScreen()
             elif i == 2:
-                screen = Module2Screen()
+                screen = renderArea()
             elif i == 3:
                 screen = Module3Screen()
             elif i == 4:
