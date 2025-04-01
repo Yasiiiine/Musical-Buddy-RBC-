@@ -8,9 +8,12 @@ import os
 import datetime
 
 class Recorder(QObject):
+
+    recording_too_short = pyqtSignal()
     def __init__(self):
         super().__init__()
         self.recording = False
+        self.short_recording = False
         self.frames = []
         self.timer = QTimer()
 
@@ -30,7 +33,7 @@ class Recorder(QObject):
         ]
 
         if not input_devices:
-            print("❌ Aucun périphérique d'entrée audio trouvé.")
+            print("Aucun périphérique d'entrée audio trouvé.")
             return
 
         input_device_index = input_devices[1]
@@ -63,16 +66,22 @@ class Recorder(QObject):
 
     def save(self):
         audio = np.concatenate(self.frames, axis=0)
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"recording_{timestamp}.wav"
-        filepath = os.path.join(cfg.OUTPUT_DIR, filename)
+        duration_seconds = len(audio) / cfg.RATE
+        if duration_seconds<=1.5:
+            print("Fichier trop court")
+            self.short_recording = True
+            self.recording_too_short.emit()
+        else:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"recording_{timestamp}.wav"
+            filepath = os.path.join(cfg.OUTPUT_DIR, filename)
 
-        os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+            os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
-        with wave.open(filepath, 'wb') as wf:
-            wf.setnchannels(cfg.CHANNELS)
-            wf.setsampwidth(2)  # 16-bit
-            wf.setframerate(cfg.RATE)
-            wf.writeframes(audio.tobytes())
+            with wave.open(filepath, 'wb') as wf:
+                wf.setnchannels(cfg.CHANNELS)
+                wf.setsampwidth(2)  # 16-bit
+                wf.setframerate(cfg.RATE)
+                wf.writeframes(audio.tobytes())
 
-        print(f"✅ Fichier enregistré : {filepath}")
+            print(f"Fichier enregistré : {filepath}")
