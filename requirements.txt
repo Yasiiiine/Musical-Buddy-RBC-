@@ -1,1 +1,5 @@
 PyQt5
+
+#Module 6
+yt-dlp
+python-vlc
