@@ -3,7 +3,7 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 
-import Modules.Template5.config as cfg
+import Modules.transcripteurMIDI.config as cfg
 
 class Module5Screen(QWidget):
     def __init__(self):

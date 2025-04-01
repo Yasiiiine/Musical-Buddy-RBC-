@@ -1,12 +1,11 @@
 # ui.py
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
-
+from PyQt5.QtGui import QPixmap,QPen,QBrush,QPaintEvent, QPainter, QColor, QFont
+from PyQt5.QtMultimedia import QAudioRecorder, QAudioProbe, QAudioInput
 import Modules.tuner.config as cfg
-
 from Modules.tuner.TunerObject import NoteFinder
 
-from PyQt5.QtGui import QPixmap,QPen,QBrush,QPaintEvent, QPainter, QColor, QFont
 
 from numpy.random import random
 
@@ -26,6 +25,13 @@ class renderArea(QWidget):
         self.Layout.addWidget(self.LabelNote)
 
         self.setLayout(self.Layout)
+
+        # self.recorder = QAudioRecorder()
+        # self.audioInput = QAudioInput()
+        # self.recorder.setAudioInput(self.audioInput)
+        # self.probe = QAudioProbe()
+        # self.probe.setSource(self.recorder)
+        # self.probe.audioBufferProbed.connect(self.recorder.processBuffer())
         
 
     def paintEvent(self,event):
@@ -89,5 +95,5 @@ class renderArea(QWidget):
         self.LabelNote.setText((self.noteTool.currentNote + str(self.noteTool.currentOrdre)))
         self.repaint()
 
-
-        
+    def processBuffer():
+        pass
