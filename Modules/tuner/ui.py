@@ -2,9 +2,9 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 
-import Modules.Template2.config as cfg
+import Modules.tuner.config as cfg
 
-from Modules.Template2.TunerObject import NoteFinder
+from Modules.tuner.TunerObject import NoteFinder
 
 from PyQt5.QtGui import QPixmap,QPen,QBrush,QPaintEvent, QPainter, QColor, QFont
 
