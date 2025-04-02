@@ -1,5 +1,7 @@
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel
+from PyQt5.QtCore import Qt, QSize, QTimer
+from PyQt5.QtGui import QMovie
+
 from screens import Screen
 
 from Modules.metronome.ui import MetronomeScreen
@@ -21,6 +23,18 @@ class MainWindow(QMainWindow):
         self.setGeometry(128, 160, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
 
         self.stack = QStackedWidget()
+        # Create overlay MovieLabel
+        self.movie_label = QLabel(self)
+        self.movie_label.setGeometry(0, 0, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
+        self.movie_label.setAlignment(Qt.AlignCenter)
+        self.movie_label.setAttribute(Qt.WA_TransparentForMouseEvents)  # Let clicks go through
+        self.movie_label.setStyleSheet("background-color: rgba(0, 0, 0, 0);")  # Transparent background
+
+        self.movie = QMovie("Assets/TransiLM.gif")
+        self.movie.setScaledSize(QSize(480, 320))
+        self.movie_label.setMovie(self.movie)
+        self.movie_label.hide()
+
         self.setCentralWidget(self.stack)
 
         self.screens = []
@@ -64,6 +78,11 @@ class MainWindow(QMainWindow):
             self.current_index = (self.current_index - 1) % 7
         elif event.key() == Qt.Key_Space:
             self.current_index = 0
+
+        # Show the bootup animation
+        self.movie_label.show()
+        self.movie.start()
+        QTimer.singleShot(3000, self.movie_label.hide)  # hide after 3 seconds
 
         next_screen = self.screens[self.current_index]
 
