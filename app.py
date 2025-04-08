@@ -13,6 +13,7 @@ from Modules.Template4.ui import Module4Screen
 from Modules.transcripteurMIDI.ui import Module5Screen
 from Modules.Template6.ui import Module6Screen
 
+
 import config
 
 class MainWindow(QMainWindow):
