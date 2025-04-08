@@ -30,7 +30,7 @@ class Module6Screen(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:
             if not self.player.is_playing():
-                self.player.play("Staying Alive")
+                self.player.play("Lego racer menu theme")
                 self.label.setText("🎵... (E to stop)")
             else:
                 self.player.stop()
