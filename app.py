@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QMovie
 
-from screens import Screen
+from screens import Screen, TransitionScreen
 
 from Modules.metronome.ui import MetronomeScreen
 from Modules.tuner.ui import renderArea
@@ -14,6 +14,7 @@ from Modules.transcripteurMIDI.ui import Module5Screen
 from Modules.Template6.ui import Module6Screen
 
 import config
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -38,6 +39,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
 
         self.screens = []
+
+        self.transition_screen = TransitionScreen()
+        self.stack.addWidget(self.transition_screen)
 
         for i in range(7):
             if i == 0:
@@ -73,23 +77,38 @@ class MainWindow(QMainWindow):
         previous_screen = self.screens[self.current_index]
 
         if event.key() == Qt.Key_D:
-            self.current_index = (self.current_index + 1) % 7
+            next_index = (self.current_index + 1) % 7
         elif event.key() == Qt.Key_Q:
-            self.current_index = (self.current_index - 1) % 7
+            next_index = (self.current_index - 1) % 7
         elif event.key() == Qt.Key_Space:
-            self.current_index = 0
+            next_index = 0
+        else:
+            return
 
-        # Show the bootup animation
-        self.movie_label.show()
-        self.movie.start()
-        QTimer.singleShot(3000, self.movie_label.hide)  # hide after 3 seconds
-
-        next_screen = self.screens[self.current_index]
-
+        # Stop current screen if needed
         if hasattr(previous_screen, "stop"):
             previous_screen.stop()
 
-        if hasattr(next_screen, "start"):
-            next_screen.start()
+        # Show transition screen
+        self.stack.setCurrentWidget(self.transition_screen)
 
-        self.stack.setCurrentIndex(self.current_index)
+        # Start the GIF overlay
+        self.movie.stop()
+        self.movie.start()
+        self.movie_label.raise_()
+        self.movie_label.show()
+
+        # Change screen after ~0.5s
+        def change_screen():
+            self.current_index = next_index
+            next_screen = self.screens[self.current_index]
+            if hasattr(next_screen, "start"):
+                next_screen.start()
+            self.stack.setCurrentWidget(next_screen)
+
+        # Hide GIF after full duration (~1.4s for your TransiLM.gif)
+        def hide_gif():
+            self.movie_label.hide()
+
+        QTimer.singleShot(500, change_screen)     # screen switch after 0.5s
+        QTimer.singleShot(1380, hide_gif)         # hide gif after full play

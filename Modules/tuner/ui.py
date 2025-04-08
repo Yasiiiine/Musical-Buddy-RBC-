@@ -47,8 +47,7 @@ class renderArea(QWidget):
         painter.setPen(pen)
 
         brush = QBrush()
-        brush.setColor(QColor.fromRgb(255,123,0))
-        brush.setStyle(Qt.BrushStyle.SolidPattern)
+        #brush.setStyle(Qt.BrushStyle.SolidPattern)
         painter.setBrush(brush)
 
         rect = self.size()
