@@ -1,26 +1,34 @@
-# ui.py
-
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QProgressBar, QHBoxLayout
 from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QPixmap, QPainter
 from Modules.Template4.logic import AudioPlayer
 import Modules.Template4.config as cfg
 import os
+from Modules.Parametres.logic import load_background, draw_background
+
 
 class Module4Screen(QWidget):
     def __init__(self):
         super().__init__()
 
-        base_dir = os.path.dirname(os.path.abspath(__file__))  # Répertoire du fichier actuel
+        # Load background image
+        self.image = load_background()
+
+        # Directory setup
+        base_dir = os.path.dirname(os.path.abspath(__file__))
         self.recordings_dir = os.path.join(base_dir, '..', '..', 'Assets', 'recordings')
         self.recordings = [f for f in os.listdir(self.recordings_dir) if f.endswith('.wav')]
 
         self.current_page = 0
-        self.items_per_page = 2
+        self.items_per_page = 3
 
+        # Audio player setup
         self.player = AudioPlayer(self.recordings_dir)
+
+        # UI Elements
         self.label = QLabel("Select a recording to play:")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        self.label.setStyleSheet("font-size: 24px; font-weight: bold; color: white;")
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
@@ -35,28 +43,29 @@ class Module4Screen(QWidget):
             QProgressBar::chunk {
                 background-color: #4caf50;
                 border-radius: 5px;
-                animation: progress-animation 1s ease-in-out infinite;
             }
         """)
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_progress)
 
+        # Main layout
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.progress_bar)
 
-        # Create layout for recording buttons
+        # Recording buttons layout
         self.recording_buttons_layout = QVBoxLayout()
         layout.addLayout(self.recording_buttons_layout)
 
-        # Add control buttons
+        # Playback control buttons
         control_layout = QHBoxLayout()
         self.start_button = QPushButton("Start")
-        self.start_button.clicked.connect(self.start_playback)
         self.pause_button = QPushButton("Pause")
-        self.pause_button.clicked.connect(self.pause_playback)
         self.stop_button = QPushButton("Stop")
+
+        self.start_button.clicked.connect(self.start_playback)
+        self.pause_button.clicked.connect(self.pause_playback)
         self.stop_button.clicked.connect(self.stop_playback)
 
         control_layout.addWidget(self.start_button)
@@ -65,17 +74,17 @@ class Module4Screen(QWidget):
         layout.addLayout(control_layout)
 
         self.setLayout(layout)
-        self.setStyleSheet(f"background-color: {cfg.MODULE_COLOR};")
-
-        self.setFocusPolicy(Qt.StrongFocus)  # Permet de capturer les événements clavier
-        self.setFocus()  # Donne le focus au widget
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocus()
 
         self.update_recording_buttons()
 
     def update_recording_buttons(self):
         # Clear existing buttons
         for i in reversed(range(self.recording_buttons_layout.count())):
-            self.recording_buttons_layout.itemAt(i).widget().deleteLater()
+            widget = self.recording_buttons_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
 
         # Add buttons for the current page
         start_index = self.current_page * self.items_per_page
@@ -89,7 +98,7 @@ class Module4Screen(QWidget):
         self.player.play(recording)
         self.label.setText(f"Playing: {recording}")
         self.progress_bar.setValue(0)
-        self.timer.start(1000)  # Update progress every second
+        self.timer.start(1000)
 
     def start_playback(self):
         if self.player.is_paused():
@@ -119,12 +128,6 @@ class Module4Screen(QWidget):
         if current_time >= duration:
             self.timer.stop()
             self.label.setText("Playback finished")
-        else:
-            self.animate_progress_bar()
-
-    def animate_progress_bar(self):
-        # Optional: Add logic for smooth animation if needed
-        pass
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Up:
@@ -138,4 +141,9 @@ class Module4Screen(QWidget):
                 self.update_recording_buttons()
                 self.label.setText(f"Page {self.current_page + 1}")
         else:
-            super().keyPressEvent(event)  # Appelle la méthode parente pour d'autres touches
+            super().keyPressEvent(event)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)  # Draw widgets first
+        painter = QPainter(self)
+        draw_background(self, painter, self.image)  # Then draw background behind widgets
