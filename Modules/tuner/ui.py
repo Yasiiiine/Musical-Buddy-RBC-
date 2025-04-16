@@ -6,6 +6,7 @@ from PyQt5.QtMultimedia import QAudioRecorder, QAudioProbe, QAudioInput
 import Modules.tuner.config as cfg
 from Modules.tuner.TunerObject import NoteFinder
 from Modules.Parametres.logic import load_background, draw_background
+import config
 
 
 from numpy.random import random
@@ -40,7 +41,6 @@ class renderArea(QWidget):
     def paintEvent(self,event):
         painter = QPainter(self)
 
-        draw_background(self, painter, self.image)
 
         pen = QPen(Qt.black)
         pen.setStyle(Qt.PenStyle.NoPen)

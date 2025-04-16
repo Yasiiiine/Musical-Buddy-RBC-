@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QPainter
 from Modules.Template4.logic import AudioPlayer
 import Modules.Template4.config as cfg
+import config
 import os
 from Modules.Parametres.logic import load_background, draw_background
 
@@ -142,8 +143,4 @@ class Module4Screen(QWidget):
                 self.label.setText(f"Page {self.current_page + 1}")
         else:
             super().keyPressEvent(event)
-
-    def paintEvent(self, event):
-        super().paintEvent(event)  # Draw widgets first
-        painter = QPainter(self)
-        draw_background(self, painter, self.image)  # Then draw background behind widgets
+            

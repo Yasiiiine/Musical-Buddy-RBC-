@@ -12,3 +12,9 @@ def draw_background(widget, painter, pixmap):
                                Qt.KeepAspectRatioByExpanding,
                                Qt.SmoothTransformation)
         painter.drawPixmap(0, 0, scaled)
+
+def paintEvent(self, event):
+    """Draw the background image."""
+    super().paintEvent(event)
+    painter = QPainter(self)
+    draw_background(self, painter, self.image)

@@ -1,20 +1,33 @@
-# ui.py
-
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPainter
 
-import Modules.Template5.config as cfg
+import Modules.Parametres.config as cfg
+from Modules.Parametres.logic import load_background, draw_background
 
-class Module5Screen(QWidget):
+
+class Module7Screen(QWidget):
     def __init__(self):
         super().__init__()
 
+        # --- Label Setup ---
+        self.label = QLabel(cfg.MODULE_LABEL)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setStyleSheet("font-size: 32px; font-weight: bold; color: white;")
+
+        # --- Layout ---
         layout = QVBoxLayout()
-
-        label = QLabel(cfg.MODULE_LABEL)
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("font-size: 32px; font-weight: bold;")
-
-        layout.addWidget(label)
+        layout.addWidget(self.label)
         self.setLayout(layout)
-        self.setStyleSheet(f"background-color: {cfg.MODULE_COLOR};")
+
+        # --- Background Image ---
+        self.image = load_background()
+
+        # --- Focus (optional) ---
+        self.setFocusPolicy(Qt.StrongFocus)
+        self.setFocus()
+
+    def start(self):
+        """Start screen logic (called when switching to this screen)."""
+        pass  # Fade handled by MainWindow
+

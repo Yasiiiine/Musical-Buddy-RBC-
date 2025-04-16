@@ -3,6 +3,7 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter
+import config
 
 import Modules.transcripteurMIDI.config as cfg
 from Modules.Parametres.logic import load_background, draw_background
@@ -21,7 +22,3 @@ class Module5Screen(QWidget):
 
         layout.addWidget(label)
         self.setLayout(layout)
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        draw_background(self, painter, self.image)
-        super().paintEvent(event)

@@ -4,6 +4,7 @@ import Modules.enregistrement.config as cfg
 from Modules.enregistrement.logic import Recorder
 from Modules.Parametres.logic import load_background, draw_background
 from PyQt5.QtGui import QPixmap, QPainter
+import config
 
 class Module3Screen(QWidget):
     def __init__(self):
@@ -23,10 +24,6 @@ class Module3Screen(QWidget):
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        draw_background(self, painter, self.image)
-        super().paintEvent(event)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:

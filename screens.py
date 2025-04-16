@@ -1,18 +1,26 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QMovie
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter
+from PyQt5.QtGui import QMovie, QPainter, QPixmap
+
 from Modules.Parametres.logic import load_background, draw_background  # or wherever you defined it
+
 
 class TransitionScreen(QWidget):
     def __init__(self):
         super().__init__()
-        self.bg = load_background()
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        draw_background(self, painter, self.bg)
+        self.image_label = QLabel(self)
+        self.image_label.setPixmap(QPixmap("Assets/BGLM.png"))
+        self.image_label.setScaledContents(True)
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet("background-color: black;")  # Optional: or transparent
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.image_label.setGeometry(self.rect())  # Centered and scaled with window
 class Screen(QWidget):
     def __init__(self, number, text=None, color=None):
         super().__init__()
