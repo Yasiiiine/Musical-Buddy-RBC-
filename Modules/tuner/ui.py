@@ -18,13 +18,24 @@ class renderArea(QWidget):
         self.noteTool = NoteFinder()
         self.noteHeard = False
         
-        font = QFont("Arial", 50, weight = 800, italic=True)
-        self.LabelNote = QLabel(text= (self.noteTool.currentNote + str(self.noteTool.currentOrdre)))
+        font = QFont("Arial", 60, QFont.Bold, italic=False)
+        self.LabelNote = QLabel(text=(self.noteTool.currentNote + str(self.noteTool.currentOrdre)))
         self.LabelNote.setFont(font)
         self.LabelNote.setAlignment(Qt.AlignCenter)
+        self.LabelNote.setStyleSheet("""
+            color: #2C3E50;
+        """)
+
 
         self.Layout = QVBoxLayout()
+        self.Layout.setContentsMargins(0, 30, 0, 0) 
+
+
+        self.Layout.addSpacing(20) 
         self.Layout.addWidget(self.LabelNote)
+        self.Layout.addStretch(1)
+
+
 
         self.image = load_background()
 
@@ -40,7 +51,7 @@ class renderArea(QWidget):
 
     def paintEvent(self,event):
         painter = QPainter(self)
-
+        y_offset = -50
 
         pen = QPen(Qt.black)
         pen.setStyle(Qt.PenStyle.NoPen)
@@ -58,35 +69,49 @@ class renderArea(QWidget):
 
         if self.noteHeard:
             if abs(self.noteTool.currentEcart - round(self.noteTool.currentEcart)) < 0.1:
-                print("Good !")
-                brush.setColor(QColor("#00B600"))
-                painter.setBrush(brush)
-                painter.eraseRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
-                painter.drawRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
+                painter.setOpacity(0.25)
+                painter.setBrush(QColor("#2ecc71"))  # Soft green
+                painter.setPen(Qt.NoPen)
+                painter.drawRect(self.rect())
+                painter.setOpacity(1.0)
+
 
             else:
 
-                brush.setColor(QColor.fromRgb(255,123,0))
+                painter.setOpacity(0.25)
+                painter.setBrush(QColor("#e74c3c"))  # Transparent red (similar to soft red)
+                painter.setPen(Qt.NoPen)
+                painter.drawRect(self.rect())
+                painter.setOpacity(1.0)
+
+
+                indicator_x = round(((self.size().width() - 60) * ((1/2) + self.noteTool.currentEcart))) + 30
+                
+
+                indicator_y = 268 + y_offset
+
+                brush.setColor(QColor("#E94F37"))  # Coral red
                 painter.setBrush(brush)
-                print("Not good !")
-                painter.eraseRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
-                painter.drawRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
-                pen.setWidth(30)
-                pen.setColor(Qt.blue)
-                pen.setStyle(Qt.PenStyle.SolidLine)
-                painter.setPen(pen)
-                painter.drawPoint(round(((self.size().width() - 60)*((1/2) + self.noteTool.currentEcart))) + 30,268)
+                painter.setPen(Qt.NoPen)
+                painter.drawEllipse(indicator_x - 8, indicator_y - 8, 16, 16)
 
         pen.setColor(Qt.black)
         pen.setStyle(Qt.PenStyle.SolidLine)
         pen.setWidth(10)
         painter.setPen(pen)
         
-        painter.drawLine(30,238,30,298)
-        painter.drawLine(166,238,166,298)
-        painter.drawLine(303,238,303,298)
-        painter.drawLine(439,238,439,298)
-        painter.drawLine(575,238,575,298)
+        bar_positions = [120, 185, 250, 315, 380]
+        bar_color = QColor("#403F4C")
+        bar_width = 12
+
+        pen = QPen(bar_color)
+        pen.setWidth(bar_width)
+        pen.setCapStyle(Qt.RoundCap)
+        painter.setPen(pen)
+
+        for x in bar_positions:
+            painter.drawLine(x, 248 + y_offset, x, 288 + y_offset)
+
         
         
         
