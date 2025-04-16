@@ -21,17 +21,17 @@ from Modules.Parametres.ui import Module7Screen
 class BootupScreen(QWidget):
     def __init__(self, on_finished_callback=None):
         super().__init__()
+
         self.label = QLabel(self)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("background-color: black;")
+        self.label.setScaledContents(True)  # Allow label to scale image
 
         self.movie = QMovie("Assets/BootupLM.gif")
-        self.movie.setSpeed(100)
-        self.movie.setScaledSize(QSize(480, 320))
         self.label.setMovie(self.movie)
-        self.label.resize(self.movie.scaledSize())
-        self.resize(self.movie.scaledSize())
-        self.center_label()
+        self.movie.frameChanged.connect(self.ensure_movie_size_once)
+        self._movie_scaled_applied = False  # Flag to ensure it's applied only once
+
 
         self.sound = QSoundEffect()
         self.sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "Bootup.wav")))
@@ -44,15 +44,35 @@ class BootupScreen(QWidget):
             duration = self.movie.frameCount() * self.movie.nextFrameDelay()
             QTimer.singleShot(duration, on_finished_callback)
 
-    def center_label(self):
-        movie_size = self.movie.scaledSize()
-        x = (self.width() - movie_size.width()) // 2
-        y = (self.height() - movie_size.height()) // 2
-        self.label.move(x, y)
+    def ensure_movie_size_once(self, frameNumber):
+        if self._movie_scaled_applied:
+            return
+
+        # Force resize logic
+        self.resizeEvent(None)
+
+        # Mark as applied to avoid future redundant resizes
+        self._movie_scaled_applied = True
+
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self.center_label()
+
+        window_size = self.size()
+        original_size = self.movie.scaledSize()  # Use set size or fallback
+
+        if original_size.isEmpty():
+            original_size = QSize(480, 320)  # Fallback size if empty
+
+        scaled_size = original_size.scaled(window_size, Qt.KeepAspectRatio)
+        self.movie.setScaledSize(scaled_size)
+        self.label.resize(scaled_size)
+        self.label.move(
+            (self.width() - scaled_size.width()) // 2,
+            (self.height() - scaled_size.height()) // 2
+        )
+
+
 
 
 def wrap_widget(widget):
@@ -111,6 +131,8 @@ class MainWindow(QMainWindow):
         self.background_label.setGeometry(self.rect())
         self.background_label.lower()
         self.background_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.background_label.hide()
+
 
         # Transition GIF
         self.movie_label = QLabel(self)
@@ -133,10 +155,12 @@ class MainWindow(QMainWindow):
         self.transition_sound.setVolume(0.8)
 
     def start_first_screen(self):
+        self.background_label.show()  # Show the background now
         self.stack.setCurrentIndex(self.current_index)
         screen = self.screens[0]
         if hasattr(screen, "start"):
             screen.start()
+
 
     def keyPressEvent(self, event):
         prev_screen = self.screens[self.current_index - 2]
@@ -157,16 +181,20 @@ class MainWindow(QMainWindow):
                          on_finished=lambda: self.start_transition(next_index + 2))
 
     def start_transition(self, next_index):
-        self.stack.setCurrentWidget(self.transition_screen)
-
-        # Woosh + start transition GIF
-        self.transition_sound.play()
+        # Show and start the GIF immediately
         self.movie.jumpToFrame(0)
-        self.movie.start()
-        self.movie_label.raise_()
         self.movie_label.show()
+        self.movie_label.raise_()
+        self.movie.start()
+        self.movie_label.repaint()  # Force immediate draw
 
-        QTimer.singleShot(150, lambda: self.switch_and_fade_in(next_index))
+        # Play sound as GIF starts
+        self.transition_sound.play()
+
+        # Now switch to the transition screen after a short delay
+        QTimer.singleShot(50, lambda: self.stack.setCurrentWidget(self.transition_screen))
+        QTimer.singleShot(200, lambda: self.switch_and_fade_in(next_index))
+
 
     def switch_and_fade_in(self, index):
         self.current_index = index
