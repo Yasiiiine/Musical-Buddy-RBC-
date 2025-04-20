@@ -1,13 +1,39 @@
-# Musical-Buddy-RBC-
+# Musical Buddy
 
-## Description 
-Notre projet PyQt permet de naviguer entre plusieurs écrans numérotés (0 à 6) en utilisant les touches **Q**, **D** et **Espace**.
- Par la suite les **interfaces 0 à 6** representeront respectivement les interfaces **Home**, **Métronome**, **Enregistrement**, **Transcription MIDI**, **Recommendation Musicale**.
+**Musical Buddy** is an interactive music assistant built on Raspberry Pi and PyQt5, designed to assist musicians with practice, performance, and creativity. It integrates a modular system with dynamic visual transitions and real-time audio interaction.
 
-## Structure du projet
+---
 
-│── main.py          # Point d'entrée du programme
-│── app.py           # Gestion de la fenêtre principale et de la navigation
-│── screens.py       # Définition des écrans numérotés
-│── config.py        # Paramètres globaux (taille, couleurs, touches...)
-│── README.md        # Documentation du projet
+## Features
+
+- **Metronome** module with visual pulse and tempo control.
+- **Voice Recorder** with waveform animation and spacebar control.
+- **Playback** of recorded or preloaded sounds.
+- **Tuner** module (in progress): detects pitch and shows tuning accuracy using buffered audio input.
+- **AI Recommendation System** (in development): analyzes played notes or MIDI input and suggests musical patterns or next notes based on ML models.
+- **Dynamic Interface** with transition animations and customizable themes (light/dark, bootup visuals).
+- **Settings Module**: Select audio input/output sources and UI themes.
+
+---
+
+## Project Structure
+
+```bash
+Musical Buddy/
+├── Musical-Buddy-RBC/
+│   ├── Assets/                   # UI assets and sound files
+│   │   └── recordings/          # Recorded audio or visual assets
+│   ├── Modules/                 # Core modules
+│   │   ├── enregistrement/      # Recording module
+│   │   ├── metronome/           # Metronome module
+│   │   ├── Parametres/          # App settings and preferences
+│   │   ├── transcripteurMIDI/   # MIDI analysis (future)
+│   │   ├── tuner/               # Tuner logic and UI
+│   │   ├── Template4-7/         # Placeholder templates
+│   ├── app.py                   # Launch controller
+│   ├── main.py                  # App startup logic
+│   ├── config.py                # General config
+│   ├── screens.py               # UI screen navigation
+│   ├── requirements.txt         # Dependencies
+│   └── README.md                # Project overview
+
