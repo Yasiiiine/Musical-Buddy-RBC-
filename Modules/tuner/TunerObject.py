@@ -1,4 +1,3 @@
-# from scipy.io.wavfile import read
 from numpy.fft import fft
 from numpy import argmax, log2, floor
 
@@ -14,6 +13,10 @@ class NoteFinder:
         self.currentAmplitude = 0
 
     def getNote(self, freqEchantillonnage, signalAudio):
+        dse = abs(fft(signalAudio)) * 2
+        dse = dse[:len(dse) // 2]
+        if dse.max() < 0.01:
+            return  # ignore low amplitude noise
 
         self.amp = floor(log2(max(signalAudio) + 1))
         dse = abs((fft(signalAudio)))*2 #Obtient la densité spectrale d'énergie du signal audio, ( l'amplitude des différentes fréquences)

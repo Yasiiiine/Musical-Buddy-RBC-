@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter
 from Modules.Template6.logic import MusicPlayer
 from Modules.Parametres.logic import load_background, draw_background
+import config
 
 import Modules.Template6.config as cfg
 
@@ -23,10 +24,6 @@ class Module6Screen(QWidget):
         self.setFocusPolicy(Qt.StrongFocus)  # Important pour capter les touches
         self.setFocus()
 
-    def paintEvent(self, event):
-            painter = QPainter(self)
-            draw_background(self, painter, self.image)
-            super().paintEvent(event)
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:
             if not self.player.is_playing():

@@ -1,40 +1,69 @@
-from Modules.tuner.TunerObject import NoteFinder
-import pyaudio
-import struct
+import sounddevice as sd
 import numpy as np
-import matplotlib.pyplot as plt
-
-CHUNK = 1024*4
-FORMAT = pyaudio.paInt16
-RATE = 44100
-CHANNELS = 1
-
-p = pyaudio.PyAudio()
-audioStream = p.open(rate = RATE,channels= CHANNELS, format=FORMAT, input = True,output=True,frames_per_buffer=CHUNK)
+from numpy.fft import fft
+from numpy import argmax, log2
+import time
 
 
+class NoteFinder:
+    def __init__(self):
+        self.notes = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"]
 
-figu, axes = plt.subplots(1,figsize=(15,7))
-x = np.arange(0,2*CHUNK,2)
-line, = axes.plot(x, np.random.rand(CHUNK), '-', lw=2)
-
-axes.set_xlim(0,2*CHUNK)
-axes.set_ylim(0,255)
-plt.setp(axes, xticks=[0, CHUNK, 2 * CHUNK], yticks=[0, 128, 255])
-
-# show the plot
-plt.show(block=False)
-
-while True:
-        data = audioStream.read(CHUNK)
-        dataint = struct.unpack(str(2*CHUNK) + 'B', data)
-        datatest = np.array(dataint,dtype='uint8')[::2] + 128
-        line.set_ydata(datatest)
-        figu.canvas.draw()
-        figu.canvas.flush_events()
-        
+    def get_note_name(self, fs, signal):
+        spectrum = abs(fft(signal))[:len(signal) // 2]
+        peak = argmax(spectrum)
+        freq = peak * fs / len(signal)
+        if freq <= 0:
+            return None, 0
+        diff = log2(freq / 440) * 12
+        note = self.notes[round(diff) % 12]
+        octave = round(diff) // 12 + 4
+        return f"{note}{octave}", freq
 
 
+def tuner_loop(device_index=1):
+    fs = 44100
+    blocksize = 4096
+    threshold = 0.005
+    stability = 5
 
-        
+    note_tool = NoteFinder()
+    last_note = None
+    count = 0
 
+    print(f"\nUtilisation de l'entrée audio ID = {device_index}")
+    print("Accordeur actif... (Ctrl+C pour quitter)\n")
+
+    def callback(indata, frames, time_info, status):
+        nonlocal last_note, count
+
+        signal = indata[:, 0]
+        if np.max(np.abs(signal)) < threshold:
+            return
+
+        note, freq = note_tool.get_note_name(fs, signal)
+        if note is None:
+            return
+
+        if note == last_note:
+            count += 1
+        else:
+            count = 0
+            last_note = note
+
+        if count >= stability:
+            print(f"Note détectée : {note} ({freq:.1f} Hz)")
+            count = 0
+
+    try:
+        with sd.InputStream(callback=callback, samplerate=fs, channels=1, blocksize=blocksize, device=(device_index, None)):
+            while True:
+                time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("\nAccordeur arrêté.")
+    except Exception as e:
+        print("Erreur :", e)
+
+
+if __name__ == "__main__":
+    tuner_loop(device_index=1)

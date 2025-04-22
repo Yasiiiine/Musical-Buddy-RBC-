@@ -1,20 +1,86 @@
-from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel
-from PyQt5.QtCore import Qt, QSize, QTimer
-from PyQt5.QtGui import QMovie
+from PyQt5.QtWidgets import (
+    QMainWindow, QStackedWidget, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
+)
+from PyQt5.QtCore import Qt, QTimer, QSize, QUrl, QPropertyAnimation, QEasingCurve
+from PyQt5.QtGui import QMovie, QPixmap
+from PyQt5.QtMultimedia import QSoundEffect
+
+import os
+import config
 
 from screens import Screen, TransitionScreen
-
 from Modules.metronome.ui import MetronomeScreen
 from Modules.tuner.ui import renderArea
-
-#from Modules.Template2.ui import renderArea
 from Modules.enregistrement.ui import Module3Screen
 from Modules.Template4.ui import Module4Screen
 from Modules.transcripteurMIDI.ui import Module5Screen
 from Modules.Template6.ui import Module6Screen
+from Modules.Parametres.ui import Module7Screen
 
 
-import config
+class BootupScreen(QWidget):
+    def __init__(self, on_finished_callback=None):
+        super().__init__()
+
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setStyleSheet("background-color: black;")
+        self.label.setScaledContents(True)  # Allow label to scale image
+
+        self.movie = QMovie("Assets/BootupLM.gif")
+        self.label.setMovie(self.movie)
+        self.movie.frameChanged.connect(self.ensure_movie_size_once)
+        self._movie_scaled_applied = False  # Flag to ensure it's applied only once
+
+
+        self.sound = QSoundEffect()
+        self.sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "Bootup.wav")))
+        self.sound.setVolume(0.8)
+
+        self.movie.start()
+        self.sound.play()
+
+        if on_finished_callback:
+            duration = self.movie.frameCount() * self.movie.nextFrameDelay()
+            QTimer.singleShot(duration, on_finished_callback)
+
+    def ensure_movie_size_once(self, frameNumber):
+        if self._movie_scaled_applied:
+            return
+
+        # Force resize logic
+        self.resizeEvent(None)
+
+        # Mark as applied to avoid future redundant resizes
+        self._movie_scaled_applied = True
+
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+
+        window_size = self.size()
+        original_size = self.movie.scaledSize()  # Use set size or fallback
+
+        if original_size.isEmpty():
+            original_size = QSize(480, 320)  # Fallback size if empty
+
+        scaled_size = original_size.scaled(window_size, Qt.KeepAspectRatio)
+        self.movie.setScaledSize(scaled_size)
+        self.label.resize(scaled_size)
+        self.label.move(
+            (self.width() - scaled_size.width()) // 2,
+            (self.height() - scaled_size.height()) // 2
+        )
+
+
+
+
+def wrap_widget(widget):
+    wrapper = QWidget()
+    layout = QVBoxLayout(wrapper)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.addWidget(widget)
+    return wrapper
 
 
 class MainWindow(QMainWindow):
@@ -22,94 +88,150 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle(config.WINDOW_TITLE)
-        self.setGeometry(128, 160, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
+        self.setGeometry(320, 480, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
 
         self.stack = QStackedWidget()
-        # Create overlay MovieLabel
-        self.movie_label = QLabel(self)
-        self.movie_label.setGeometry(0, 0, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
-        self.movie_label.setAlignment(Qt.AlignCenter)
-        self.movie_label.setAttribute(Qt.WA_TransparentForMouseEvents)  # Let clicks go through
-        self.movie_label.setStyleSheet("background-color: rgba(0, 0, 0, 0);")  # Transparent background
-
-        self.movie = QMovie("Assets/TransiLM.gif")
-        self.movie.setScaledSize(QSize(480, 320))
-        self.movie_label.setMovie(self.movie)
-        self.movie_label.hide()
-
         self.setCentralWidget(self.stack)
 
         self.screens = []
+        self.screen_wrappers = []
 
+        # Bootup screen
+        self.bootup_screen = BootupScreen(on_finished_callback=self.start_first_screen)
+        self.stack.addWidget(self.bootup_screen)
+
+        # Transition screen with BGLM
         self.transition_screen = TransitionScreen()
         self.stack.addWidget(self.transition_screen)
 
-        for i in range(7):
-            if i == 0:
-                screen = Screen(i)
-            elif i == 1:
-                screen = MetronomeScreen()
-            elif i == 2:
-                screen = renderArea()
-            elif i == 3:
-                screen = Module3Screen()
-            elif i == 4:
-                screen = Module4Screen()
-            elif i == 5:
-                screen = Module5Screen()
-            elif i == 6:
-                screen = Module6Screen()
-            else:
-                screen = Screen(i, text=f"Module {i}", color="#dddddd")
+        # All module screens
+        modules = [
+            Screen(0),
+            MetronomeScreen(),
+            renderArea(),
+            Module3Screen(),
+            Module4Screen(),
+            Module5Screen(),
+            Module6Screen(),
+            Module7Screen()
+        ]
 
+        for screen in modules:
+            wrapper = wrap_widget(screen)
             self.screens.append(screen)
-            self.stack.addWidget(screen)
+            self.screen_wrappers.append(wrapper)
+            self.stack.addWidget(wrapper)
 
-        self.current_index = 0
+        self.current_index = 2  # First real screen index
+
+        # Background image
+        self.background_label = QLabel(self)
+        self.background_label.setPixmap(QPixmap("Assets/BGLM.png"))
+        self.background_label.setScaledContents(True)
+        self.background_label.setGeometry(self.rect())
+        self.background_label.lower()
+        self.background_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.background_label.hide()
+
+
+        # Transition GIF
+        self.movie_label = QLabel(self)
+        self.movie_label.setAlignment(Qt.AlignCenter)
+        self.movie_label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.movie_label.setStyleSheet("background-color: transparent;")
+
+        self.movie = QMovie("Assets/TransiLM.gif")
+        self.movie.setSpeed(175)
+        self.movie.setScaledSize(QSize(480, 320))
+        self.movie.jumpToFrame(0)  # Preload first frame
+        self.movie_label.resize(self.movie.scaledSize())
+        self.movie_label.setMovie(self.movie)
+        self.movie_label.hide()
+        self.center_movie_label()
+
+        # Woosh sound
+        self.transition_sound = QSoundEffect()
+        self.transition_sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "woosh.wav")))
+        self.transition_sound.setVolume(0.8)
+
+    def start_first_screen(self):
+        self.background_label.show()  # Show the background now
         self.stack.setCurrentIndex(self.current_index)
-        self.setFocusPolicy(Qt.StrongFocus)
+        screen = self.screens[0]
+        if hasattr(screen, "start"):
+            screen.start()
 
-        # Démarre le premier écran si nécessaire
-        current_screen = self.screens[self.current_index]
-        if hasattr(current_screen, "start"):
-            current_screen.start()
 
     def keyPressEvent(self, event):
-        previous_screen = self.screens[self.current_index]
-
+        prev_screen = self.screens[self.current_index - 2]
         if event.key() == Qt.Key_D:
-            next_index = (self.current_index + 1) % 7
+            next_index = (self.current_index - 2 + 1) % len(self.screens)
         elif event.key() == Qt.Key_Q:
-            next_index = (self.current_index - 1) % 7
+            next_index = (self.current_index - 2 - 1) % len(self.screens)
         elif event.key() == Qt.Key_Space:
             next_index = 0
         else:
             return
 
-        # Stop current screen if needed
-        if hasattr(previous_screen, "stop"):
-            previous_screen.stop()
+        if hasattr(prev_screen, "stop"):
+            prev_screen.stop()
 
-        # Show transition screen
-        self.stack.setCurrentWidget(self.transition_screen)
+        # Fade out current screen wrapper
+        self.fade_widget(self.screen_wrappers[self.current_index - 2], 1, 0, 250,
+                         on_finished=lambda: self.start_transition(next_index + 2))
 
-        # Start the GIF overlay
-        self.movie.stop()
-        self.movie.start()
-        self.movie_label.raise_()
+    def start_transition(self, next_index):
+        # Show and start the GIF immediately
+        self.movie.jumpToFrame(0)
         self.movie_label.show()
+        self.movie_label.raise_()
+        self.movie.start()
+        self.movie_label.repaint()  # Force immediate draw
 
-        # Change screen after ~0.5s
-        def change_screen():
-            self.current_index = next_index
-            next_screen = self.screens[self.current_index]
-            if hasattr(next_screen, "start"):
-                next_screen.start()
-            self.stack.setCurrentWidget(next_screen)
+        # Play sound as GIF starts
+        self.transition_sound.play()
 
-        # Hide GIF after full duration (~1.4s for your TransiLM.gif)
-        def hide_gif():
-            self.movie_label.hide()
+        # Now switch to the transition screen after a short delay
+        QTimer.singleShot(50, lambda: self.stack.setCurrentWidget(self.transition_screen))
+        QTimer.singleShot(200, lambda: self.switch_and_fade_in(next_index))
 
-        QTimer.singleShot(500, change_screen)     # screen switch after 0.5s
-        QTimer.singleShot(1380, hide_gif)         # hide gif after full play
+
+    def switch_and_fade_in(self, index):
+        self.current_index = index
+        screen = self.screens[self.current_index - 2]
+        wrapper = self.screen_wrappers[self.current_index - 2]
+
+        self.stack.setCurrentWidget(wrapper)
+        if hasattr(screen, "start"):
+            screen.start()
+
+        wrapper.setGraphicsEffect(None)
+        self.fade_widget(wrapper, 0, 1, 300)
+        QTimer.singleShot(500, self.movie_label.hide)
+
+    def fade_widget(self, widget, start, end, duration, on_finished=None):
+        effect = QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(effect)
+        widget.setVisible(True)
+
+        anim = QPropertyAnimation(effect, b"opacity")
+        anim.setDuration(duration)
+        anim.setStartValue(start)
+        anim.setEndValue(end)
+        anim.setEasingCurve(QEasingCurve.InOutQuad)
+
+        self._fade_anim = anim  # Keep reference alive
+        if on_finished:
+            anim.finished.connect(on_finished)
+        anim.start()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.background_label.setGeometry(self.rect())
+        self.center_movie_label()
+
+    def center_movie_label(self):
+        movie_size = self.movie.scaledSize()
+        x = (self.width() - movie_size.width()) // 2
+        y = (self.height() - movie_size.height()) // 2
+        self.movie_label.move(x, y)
