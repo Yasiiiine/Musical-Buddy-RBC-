@@ -2,13 +2,13 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap,QPen,QBrush,QPaintEvent, QPainter, QColor, QFont
-from PyQt5.QtMultimedia import QAudioRecorder, QAudioProbe, QAudioInput
 import Modules.tuner.config as cfg
 from Modules.tuner.TunerObject import NoteFinder
 from Modules.Parametres.logic import load_background, draw_background
-
+import pyaudio
 
 from numpy.random import random
+
 
 class renderArea(QWidget):
     def __init__(self):
@@ -26,8 +26,10 @@ class renderArea(QWidget):
         self.Layout.addWidget(self.LabelNote)
 
         self.image = load_background()
-
+        self.running = False
         self.setLayout(self.Layout)
+        self.p = pyaudio.PyAudio()
+        stream = self.p.open(44100,channels=1,format=pyaudio.paInt16,input=True,output=True,frames_per_buffer=1024*4)
 
         # self.recorder = QAudioRecorder()
         # self.audioInput = QAudioInput()
@@ -93,11 +95,13 @@ class renderArea(QWidget):
         self.noteHeard = False
 
     def mousePressEvent(self, a0):
-        self.noteHeard = not self.noteHeard
-        self.noteTool.currentEcart = (random()-1/2)
-        print(self.noteTool.currentEcart)
-        self.LabelNote.setText((self.noteTool.currentNote + str(self.noteTool.currentOrdre)))
-        self.repaint()
+        # self.noteHeard = not self.noteHeard
+        # self.noteTool.currentEcart = (random()-1/2)
+        # print(self.noteTool.currentEcart)
+        # self.LabelNote.setText((self.noteTool.currentNote + str(self.noteTool.currentOrdre)))
+        # self.repaint()
+        self.running = not self.running
+    
+    
 
-    def processBuffer():
-        pass
+
