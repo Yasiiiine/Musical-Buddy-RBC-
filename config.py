@@ -7,8 +7,3 @@ WINDOW_TITLE = "Musical Buddy"
 BG = "Assets/BGLM.png"
 bootup = "Assets/Bootup.wav"
 
-def paintEvent(self, event):
-    """Draw the background image."""
-    super().paintEvent(event)
-    painter = QPainter(self)
-    draw_background(self, painter, self.image)
