@@ -1,49 +1,64 @@
-# logic.py
-
 import os
-import vlc
+import sounddevice as sd
+import soundfile as sf
+import threading
+
 
 class AudioPlayer:
     def __init__(self, recordings_path):
         self.recordings_path = recordings_path
-        self.player = None
+        self.audio_data = None
+        self.sample_rate = None
+        self.playing_thread = None
+        self.is_playing_flag = False
+        self.stop_flag = False
 
     def play(self, filename):
-        if self.player is not None and self.player.is_playing():
-            self.player.stop()
+        self.stop()  # Stop any currently playing audio
 
         audio_file = os.path.join(self.recordings_path, filename)
         if os.path.exists(audio_file):
-            if self.player is None:
-                self.player = vlc.MediaPlayer(audio_file)
-            else:
-                self.player.set_media(vlc.Media(audio_file))
-            self.player.play()
+            self.audio_data, self.sample_rate = sf.read(audio_file)
+            self.stop_flag = False
+            self.is_playing_flag = True
+            self.playing_thread = threading.Thread(target=self._play_audio)
+            self.playing_thread.start()
             print(f"Playing: {filename}")
         else:
             print(f"File not found: {audio_file}")
 
+    def _play_audio(self):
+        def callback(outdata, frames, time, status):
+            if status:
+                print(status)
+            if self.stop_flag or self.audio_data is None:
+                raise sd.CallbackStop()
+            outdata[:] = self.audio_data[:frames]
+            self.audio_data = self.audio_data[frames:]
+
+        with sd.OutputStream(samplerate=self.sample_rate, channels=len(self.audio_data.shape), callback=callback):
+            sd.sleep(int(len(self.audio_data) / self.sample_rate * 1000))
+        self.is_playing_flag = False
+
     def pause(self):
-        if self.player is not None and self.player.is_playing():
-            self.player.pause()
+        print("Pause functionality is not supported with sounddevice.")
 
     def resume(self):
-        if self.player is not None:
-            self.player.play()
+        print("Resume functionality is not supported with sounddevice.")
 
     def stop(self):
-        if self.player is not None and (self.player.is_playing() or self.is_paused()):
-            self.player.stop()
-            self.player = None  # Reset the player to ensure proper cleanup
+        self.stop_flag = True
+        if self.playing_thread and self.playing_thread.is_alive():
+            self.playing_thread.join()
+        self.is_playing_flag = False
+        print("Playback stopped.")
 
     def is_playing(self):
-        return self.player.is_playing() if self.player else False
-
-    def is_paused(self):
-        return self.player.get_state() == vlc.State.Paused if self.player else False
+        return self.is_playing_flag
 
     def get_duration(self):
-        return self.player.get_length() if self.player else 0
+        return int(len(self.audio_data) / self.sample_rate * 1000) if self.audio_data is not None else 0
 
     def get_time(self):
-        return self.player.get_time() if self.player else 0
+        print("Current playback time tracking is not supported with sounddevice.")
+        return 0
