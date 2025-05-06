@@ -62,15 +62,12 @@ class Module4Screen(QWidget):
         # Playback control buttons
         control_layout = QHBoxLayout()
         self.start_button = QPushButton("Start")
-        self.pause_button = QPushButton("Pause")
         self.stop_button = QPushButton("Stop")
 
         self.start_button.clicked.connect(self.start_playback)
-        self.pause_button.clicked.connect(self.pause_playback)
         self.stop_button.clicked.connect(self.stop_playback)
 
         control_layout.addWidget(self.start_button)
-        control_layout.addWidget(self.pause_button)
         control_layout.addWidget(self.stop_button)
         layout.addLayout(control_layout)
 
@@ -102,19 +99,10 @@ class Module4Screen(QWidget):
         self.timer.start(1000)
 
     def start_playback(self):
-        if self.player.is_paused():
-            self.player.resume()
-            self.label.setText("Resumed playback")
-            self.timer.start(1000)
-
-    def pause_playback(self):
-        if self.player.is_playing():
-            self.player.pause()
-            self.label.setText("Paused playback")
-            self.timer.stop()
+        print("Start functionality is handled by play_recording.")
 
     def stop_playback(self):
-        if self.player.is_playing() or self.player.is_paused():
+        if self.player.is_playing():
             self.player.stop()
             self.label.setText("Stopped playback")
             self.progress_bar.setValue(0)
@@ -122,11 +110,10 @@ class Module4Screen(QWidget):
 
     def update_progress(self):
         duration = self.player.get_duration()
-        current_time = self.player.get_time()
         if duration > 0:
-            progress = int((current_time / duration) * 100)
+            progress = int((self.progress_bar.value() + 1000) / duration * 100)
             self.progress_bar.setValue(progress)
-        if current_time >= duration:
+        if self.progress_bar.value() >= 100:
             self.timer.stop()
             self.label.setText("Playback finished")
 
@@ -143,4 +130,3 @@ class Module4Screen(QWidget):
                 self.label.setText(f"Page {self.current_page + 1}")
         else:
             super().keyPressEvent(event)
-            
