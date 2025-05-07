@@ -1,34 +1,38 @@
+# ui.py
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QPainter
+from PyQt5.QtGui import QFont
 from Modules.Template6.logic import MusicPlayer
-from Modules.Parametres.logic import load_background, draw_background
-import config
-
-import Modules.Template6.config as cfg
+from Modules.Parametres.logic import load_background
 
 class Module6Screen(QWidget):
     def __init__(self):
         super().__init__()
 
         self.player = MusicPlayer()
+
         self.label = QLabel("Press E to play")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("font-size: 32px; font-weight: bold;")
+        self.label.setStyleSheet("font-size: 32px; font-weight: bold; color: #2C3E50;")
+        self.label.setFont(QFont("Arial", 24, QFont.Bold))
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.label)
-        self.setLayout(layout)
         self.image = load_background()
 
-        self.setFocusPolicy(Qt.StrongFocus)  # Important pour capter les touches
+        layout = QVBoxLayout()
+        layout.setContentsMargins(40, 30, 40, 30)
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+
+        self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:
             if not self.player.is_playing():
                 self.player.play("Dream theater the mirror")
-                self.label.setText("🎵... (E to stop)")
+                self.label.setText("Playing... (Press E to stop)")
             else:
                 self.player.stop()
                 self.label.setText("Press E to play")
+        else:
+            super().keyPressEvent(event)  # allow screen switching with other keys
