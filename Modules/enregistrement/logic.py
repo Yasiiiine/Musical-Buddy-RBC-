@@ -16,6 +16,7 @@ class Recorder(QObject):
         self.short_recording = False
         self.frames = []
         self.timer = QTimer()
+        self.soundlevel = 0
 
     def toggle_recording(self):
         if self.recording:
@@ -60,6 +61,7 @@ class Recorder(QObject):
         self.recording = False
 
     def callback(self, indata, frames, time, status):
+        self.soundlevel = max(abs(indata))
         if status:
             print(status)
         self.frames.append(indata.copy())

@@ -24,7 +24,17 @@ class Module3Screen(QWidget):
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
-
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        # Define which recorder image to show from a table. table in logic or ui ?
+        numRecord = 0
+        while numRecord != 6 and self.recorder.soundlevel >= config.PLAGES_NIVEAU_SONORE[numRecord]:
+            numRecord += 1
+        numRecord -= 1
+        
+        # Draw the image inside a specific rectangle
+        #  painter.drawImage() 
+ 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:
             self.recorder.toggle_recording()
