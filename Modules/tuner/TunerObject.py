@@ -5,6 +5,7 @@ from numpy import argmax, log2, floor
 
 class NoteFinder:
     def __init__(self):
+        self.freqOrdre = [15.88, 31.77, 63.55, 127.1,  254.2, 508.4, 1017, 2033, 4066, 8134]
         self.notes  = ["A","A#","B","C","C#","D","D#","E","F","F#","G","G#"] #notes possibles en chaîne de caractères
         self.currentNote = "A" #note courante
         self.currentFreq = 440 #fréquence de la note courante théorique
@@ -13,6 +14,8 @@ class NoteFinder:
         self.currentAmplitude = 0
 
     def getNote(self, freqEchantillonnage, signalAudio):
+        self.currentAmplitude = max(signalAudio)
+        
         dse = abs(fft(signalAudio)) * 2
         dse = dse[:len(dse) // 2]
         if dse.max() < 0.01:
@@ -29,9 +32,13 @@ class NoteFinder:
         # Toute fréquence de note peut s'écrire f = 440 * (2**(k/12)), 
 
         floatOrdre = log2(self.currentFreq/440)*12
-        self.currentOrdre = round(floatOrdre)//12
         self.currentEcart = floatOrdre - round(floatOrdre)
         self.currentNote = self.notes[round(floatOrdre)%12]
+        
+        i = 0
+        while i != 10 and self.currentFreq >= self.freqOrdre[i]:
+            i += 1   
+        self.currentOrdre = 0 if i == 0 else i-1
         
 
 class ChordFinder(NoteFinder):
