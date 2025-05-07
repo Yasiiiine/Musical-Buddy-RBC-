@@ -38,7 +38,9 @@ class NoteFinder:
         i = 0
         while i != 10 and self.currentFreq >= self.freqOrdre[i]:
             i += 1   
-        self.currentOrdre = 0 if i == 0 else i-1
+        if i == 0:
+            self.currentOrdre = 0
+        else: self.currentOrdre = (i-2)
         
 
 class ChordFinder(NoteFinder):
