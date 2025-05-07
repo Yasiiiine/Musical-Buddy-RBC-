@@ -1,10 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt
-import Modules.enregistrement.config as cfg
+from PyQt5.QtGui import QFont
 from Modules.enregistrement.logic import Recorder
-from Modules.Parametres.logic import load_background, draw_background
-from PyQt5.QtGui import QPixmap, QPainter
-import config
+from Modules.Parametres.logic import load_background
 
 class Module3Screen(QWidget):
     def __init__(self):
@@ -12,9 +10,12 @@ class Module3Screen(QWidget):
 
         self.recorder = Recorder()
 
-        self.label = QLabel("Appuyez sur la touche E pour enregistrer")
+        font = QFont("Arial", 15, QFont.Bold, italic=False)
+
+        self.label = QLabel("Press E to record")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.label.setFont(font)
+        self.label.setStyleSheet("color: #2C3E50;")
 
         self.image = load_background()
 
@@ -39,9 +40,12 @@ class Module3Screen(QWidget):
         if event.key() == Qt.Key_E:
             self.recorder.toggle_recording()
             if self.recorder.short_recording:
-                self.label.setText("Enregistrement trop court!")
+                self.label.setText("Too Short!!!!")
                 self.recorder.short_recording = False
             elif self.recorder.recording:
-                self.label.setText("Enregistrement en cours... (E pour stopper)")
+                self.label.setText("Press E to stop recording")
             else:
-                self.label.setText("Enregistrement sauvegardé ! Appuyez sur E pour recommencer.")
+                self.label.setText("Saved! Press E to record again")
+            self.setFocus()  # Ensure the widget regains focus after recording
+        else:
+            super().keyPressEvent(event)

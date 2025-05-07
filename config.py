@@ -6,4 +6,4 @@ WINDOW_HEIGHT = 320
 WINDOW_TITLE = "Musical Buddy"
 BG = "Assets/BGLM.png"
 bootup = "Assets/Bootup.wav"
-
+theme = 'light'
