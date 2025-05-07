@@ -48,8 +48,9 @@ class renderArea(QWidget):
 
         # Lancement thread micro
         self.running = True
-        self.audio_thread = threading.Thread(target=self.listen_micro)
+        self.audio_thread = threading.Thread(target=self.listen_micro, daemon=True)
         self.audio_thread.start()
+
 
     def paintEvent(self, event):
         painter = QPainter(self)

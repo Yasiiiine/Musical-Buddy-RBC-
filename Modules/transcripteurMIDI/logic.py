@@ -7,6 +7,7 @@ class Transcripteur:
         self.times = []
         self.path = path
         self.outputFile = open(self.path)
+        
     def transcript(self):
         midi = ...
         track    = 0   
