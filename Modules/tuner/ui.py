@@ -1,11 +1,19 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox
+# ui.py
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPen, QBrush, QPainter, QColor, QFont
+from PyQt5.QtMultimedia import QAudioRecorder, QAudioProbe, QAudioInput
+import Modules.tuner.config as cfg
+from Modules.tuner.TunerObject import NoteFinder
+from Modules.Parametres.logic import load_background, draw_background, update_background
+import config
+from config import theme_manager
+import pyaudio
+
+from numpy.random import random
 import sounddevice as sd
 import numpy as np
 import threading
-from Modules.tuner.TunerObject import NoteFinder
-from Modules.Parametres.logic import load_background, draw_background
 
 class renderArea(QWidget):
     def __init__(self):
@@ -14,115 +22,35 @@ class renderArea(QWidget):
         self.noteTool = NoteFinder()
         self.noteHeard = False
 
-        # --- Label Note ---
         font = QFont("Arial", 60, QFont.Bold, italic=False)
         self.LabelNote = QLabel(text="A4")
         self.LabelNote.setFont(font)
         self.LabelNote.setAlignment(Qt.AlignCenter)
-        self.LabelNote.setStyleSheet("color: #2C3E50;")
-
-        # --- Dropdown for Microphone Selection ---
-        self.device_selector = QComboBox()
-        self.device_selector.addItems([f"{i}: {name}" for i, name in self.list_input_devices()])
-        self.device_selector.setStyleSheet("""
-            QComboBox {
-                font-size: 18px;
-                padding: 10px 20px;
-                background-color: #5d8271;
-                color: white;
-                border: none;
-                border-radius: 8px;
-            }
-            QComboBox:hover {
-                background-color: #4a6b5c;
-            }
-            QComboBox::drop-down {
-                border: none;
-            }
+        self.LabelNote.setStyleSheet("""
+            color: #2C3E50;
         """)
-        self.device_selector.setMaximumWidth(300)  # Set maximum width for the dropdown menu
-        self.device_selector.currentIndexChanged.connect(self.change_microphone)
 
-        # --- Layout ---
         self.Layout = QVBoxLayout()
-        self.Layout.setContentsMargins(40, 30, 40, 30)
-        self.Layout.setSpacing(20)
+        self.Layout.setContentsMargins(0, 30, 0, 0)
 
-        self.Layout.addWidget(self.device_selector, alignment=Qt.AlignCenter)
         self.Layout.addSpacing(20)
         self.Layout.addWidget(self.LabelNote)
         self.Layout.addStretch(1)
 
         self.image = load_background()
         self.setLayout(self.Layout)
+        self.p = pyaudio.PyAudio()
+        stream = self.p.open(44100,channels=1,format=pyaudio.paInt16,input=True,output=True,frames_per_buffer=1024*4)
 
         # Variables de stabilité
         self.lastStableNote = ""
         self.stabilityCounter = 0
         self.requiredStability = 3  # Plus c'est grand, plus c'est stable
 
-        # Initialisation des variables audio
-        self.running = True
-        self.selected_device = 0  # Par défaut, le premier périphérique
-        self.audio_thread = threading.Thread(target=self.listen_micro, daemon=True)
-        self.audio_thread.start()
-
-    def list_input_devices(self):
-        """Liste les périphériques d'entrée disponibles."""
-        devices = sd.query_devices()
-        input_devices = [
-            (i, dev['name']) for i, dev in enumerate(devices) if dev['max_input_channels'] > 0
-        ]
-        return input_devices
-
-    def change_microphone(self, index):
-        """Change le périphérique d'entrée sélectionné."""
-        self.selected_device = int(self.device_selector.currentText().split(":")[0])
-        print(f"Microphone sélectionné : {self.selected_device}")
-        self.restart_listening()
-
-    def restart_listening(self):
-        """Redémarre l'écoute avec le nouveau périphérique sélectionné."""
-        self.running = False
-        if self.audio_thread and self.audio_thread.is_alive():
-            self.audio_thread.join()
-
+        # Lancement thread micro
         self.running = True
         self.audio_thread = threading.Thread(target=self.listen_micro, daemon=True)
         self.audio_thread.start()
-
-    def listen_micro(self):
-        def callback(indata, frames, time, status):
-            signal = indata[:, 0]
-            if np.max(np.abs(signal)) < 0.005:
-                return
-
-            self.noteTool.getNote(44100, signal)
-            note = self.noteTool.currentNote + str(self.noteTool.currentOrdre)
-
-            if note == self.lastStableNote:
-                self.stabilityCounter += 1
-            else:
-                self.stabilityCounter = 0
-                self.lastStableNote = note
-
-            if self.stabilityCounter >= self.requiredStability:
-                self.LabelNote.setText(note)
-                self.noteHeard = True
-                self.repaint()
-                self.stabilityCounter = 0
-
-        try:
-            # Vérifiez si le périphérique prend en charge le taux d'échantillonnage
-            sd.check_input_settings(device=self.selected_device, samplerate=44100)
-
-            with sd.InputStream(callback=callback, channels=1, samplerate=44100, blocksize=4096, device=(self.selected_device, None)):
-                while self.running:
-                    sd.sleep(100)
-        except sd.PortAudioError as e:
-            print(f"Erreur micro : {e}")
-        except Exception as e:
-            print(f"Erreur inattendue : {e}")
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -165,8 +93,78 @@ class renderArea(QWidget):
 
         self.noteHeard = False
 
+        # Base values
+        ecart = self.noteTool.currentEcart
+        ecart = max(-0.5, min(0.5, ecart))  # Clamp between -0.5 and +0.5
+
+        track_width = 200  # total width in pixels for full [-0.5, +0.5] range
+        center_x = self.width() // 2
+
+        # Convert ecart to pixels: -0.5 → -track_width/2, 0 → 0, +0.5 → +track_width/2
+        pixel_offset = ecart * track_width
+        indicator_x = int(center_x + pixel_offset)
+
+        indicator_y = int(268 + y_offset)
+
+        if self.noteHeard:
+            if abs(self.noteTool.currentEcart - self.noteTool.currentEcart) < 0.1:
+                painter.setOpacity(0.25)
+                painter.setBrush(QColor("#2ecc71"))
+                painter.setPen(Qt.NoPen)
+                painter.drawRect(self.rect())
+                painter.setOpacity(1.0)
+            else:
+                painter.setOpacity(0.25)
+                painter.setBrush(QColor("#e74c3c"))
+                painter.setPen(Qt.NoPen)
+                painter.drawRect(self.rect())
+                painter.setOpacity(1.0)
+
+        brush.setStyle(Qt.BrushStyle.SolidPattern)
+        brush.setColor(QColor("#403F4C"))
+        painter.setBrush(brush)
+        painter.setPen(Qt.PenStyle.SolidLine)
+        painter.drawEllipse(indicator_x - 8, indicator_y - 8, 16, 16)
+        print(self.noteTool.currentEcart)
+
+    def mousePressEvent(self, a0):
+        self.noteHeard = not self.noteHeard
+        self.noteTool.currentEcart = (random() - 0.5)
+        self.LabelNote.setText(self.noteTool.currentNote + str(self.noteTool.currentOrdre))
+        self.repaint()
+
+    def listen_micro(self):
+        def callback(indata, frames, time, status):
+            signal = indata[:, 0]
+            if np.max(np.abs(signal)) < 0.005:
+                return
+
+            self.noteTool.getNote(44100, signal)
+            note = self.noteTool.currentNote + str(self.noteTool.currentOrdre)
+
+            if note == self.lastStableNote:
+                self.stabilityCounter += 1
+            else:
+                self.stabilityCounter = 0
+                self.lastStableNote = note
+
+            if self.stabilityCounter >= self.requiredStability:
+                self.LabelNote.setText(note)
+                self.noteHeard = True
+                self.repaint()
+                self.stabilityCounter = 0
+
+        try:
+            with sd.InputStream(callback=callback, channels=1, samplerate=44100, blocksize=4096, device=(1, None)):
+                while self.running:
+                    sd.sleep(100)
+        except Exception as e:
+            print("Erreur micro :", e)
+
     def closeEvent(self, event):
         self.running = False
-        if self.audio_thread:
-            self.audio_thread.join()
+        self.audio_thread.join()
         event.accept()
+
+    def processBuffer():
+        pass

@@ -2,6 +2,7 @@ from midiutil import MIDIFile
 from midiutil.MidiFile import SHARPS,FLATS,MAJOR,MINOR
 from scipy.io.wavfile import read
 from Modules.tuner.TunerObject import NoteFinder
+from numpy import floor
 
 class Transcripteur:
     def __init__(self):
