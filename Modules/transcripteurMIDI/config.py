@@ -1,4 +1,4 @@
 # config.py
 
 MODULE_COLOR = "#ffcccc"  # couleur unique
-MODULE_LABEL = "Module 5"
+MODULE_LABEL = "Transcripteur MIDI"

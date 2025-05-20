@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont, QPainter, QPixmap
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont,QPainter
 from Modules.enregistrement.logic import Recorder
 from Modules.Parametres.logic import load_background
-import Modules.enregistrement.config as config
+import Modules.enregistrement.config as cfg
 
 class Module3Screen(QWidget):
     def __init__(self):
@@ -39,7 +39,7 @@ class Module3Screen(QWidget):
 
         # Determine which image to display based on the sound level
         numRecord = 0
-        while numRecord < 6 and self.recorder.soundlevel >= config.PLAGES_NIVEAU_SONORE[numRecord]:
+        while numRecord != 6 and self.recorder.soundlevel >= cfg.PLAGES_NIVEAU_SONORE[numRecord]:
             numRecord += 1
         numRecord = max(0, numRecord - 1)  # Ensure numRecord is within valid range
 
