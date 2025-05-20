@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSizePolicy
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QEvent
 import os
 from Modules.Template4.logic import AudioPlayer
 from Modules.Parametres.logic import load_background
@@ -97,7 +97,12 @@ class Module4Screen(QWidget):
         for i in range(self.visible_range_start, end):
             button = QPushButton(self.recordings[i])
             button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+            # Connect the button click to play the recording
             button.clicked.connect(lambda checked, r=self.recordings[i]: self.play_recording(r))
+
+            # Add hover behavior to update selection
+            button.installEventFilter(self)
 
             # Highlight if selected
             if i == self.selected_index:
@@ -105,7 +110,7 @@ class Module4Screen(QWidget):
                     QPushButton {
                         font-size: 14px;
                         padding: 6px 12px;
-                        background-color: #2980b9;
+                        background-color: #555555;
                         color: white;
                         border: none;
                         border-radius: 6px;
@@ -121,11 +126,47 @@ class Module4Screen(QWidget):
                         border: none;
                         border-radius: 6px;
                     }
-                    QPushButton:hover {
-                        background-color: #2980b9;
-                    }
                 """)
             self.recording_buttons_layout.addWidget(button)
+
+    def eventFilter(self, source, event):
+        """Handle hover events to update button selection."""
+        if event.type() == QEvent.Enter and isinstance(source, QPushButton):
+            # Update the selected index based on the hovered button
+            for i in range(self.recording_buttons_layout.count()):
+                button = self.recording_buttons_layout.itemAt(i).widget()
+                if button == source:
+                    # Only update styles if the hovered button is different from the current selection
+                    if self.selected_index != self.visible_range_start + i:
+                        # Reset the style of the previously selected button
+                        prev_button = self.recording_buttons_layout.itemAt(self.selected_index - self.visible_range_start).widget()
+                        prev_button.setStyleSheet("""
+                            QPushButton {
+                                font-size: 14px;
+                                padding: 6px 12px;
+                                background-color: #5d8271;
+                                color: white;
+                                border: none;
+                                border-radius: 6px;
+                            }
+                        """)
+
+                        # Update the style of the newly hovered button
+                        button.setStyleSheet("""
+                            QPushButton {
+                                font-size: 14px;
+                                padding: 6px 12px;
+                                background-color: #555555;
+                                color: white;
+                                border: none;
+                                border-radius: 6px;
+                            }
+                        """)
+
+                        # Update the selected index
+                        self.selected_index = self.visible_range_start + i
+                    break
+        return super().eventFilter(source, event)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Up:

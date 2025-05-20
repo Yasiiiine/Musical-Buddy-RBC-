@@ -5,8 +5,9 @@ from PyQt5.QtGui import QPixmap, QPen, QBrush, QPainter, QColor, QFont
 from PyQt5.QtMultimedia import QAudioRecorder, QAudioProbe, QAudioInput
 import Modules.tuner.config as cfg
 from Modules.tuner.TunerObject import NoteFinder
-from Modules.Parametres.logic import load_background, draw_background
+from Modules.Parametres.logic import load_background, draw_background, update_background
 import config
+from config import theme_manager
 import pyaudio
 
 from numpy.random import random
@@ -51,11 +52,14 @@ class renderArea(QWidget):
         self.audio_thread = threading.Thread(target=self.listen_micro, daemon=True)
         self.audio_thread.start()
 
-
     def paintEvent(self, event):
         painter = QPainter(self)
-        y_offset = -50
 
+        # Ensure the background image is scaled and centered
+        draw_background(self, painter, self.image)
+
+        # Draw the tuning indicator (existing logic)
+        y_offset = -50
         pen = QPen(Qt.black)
         pen.setStyle(Qt.PenStyle.NoPen)
         painter.setPen(pen)
@@ -69,6 +73,7 @@ class renderArea(QWidget):
 
         painter.drawRect(self.x() + 10, self.y() + 10, rect.width(), rect.height())
 
+        # Additional tuning indicator logic...
         pen.setColor(Qt.black)
         pen.setStyle(Qt.SolidLine)
         pen.setWidth(10)

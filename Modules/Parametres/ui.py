@@ -6,6 +6,8 @@ import Modules.Parametres.config as cfg
 from Modules.Parametres.logic import load_background, draw_background
 import config as config
 
+from config import theme_manager
+
 class Module7Screen(QWidget):
     def __init__(self):
         super().__init__()
@@ -24,21 +26,34 @@ class Module7Screen(QWidget):
         self.image = load_background()
         self.toggle_button = QPushButton("Toggle Theme")
         self.toggle_button.clicked.connect(self.toggle_theme)
+        self.toggle_button.setStyleSheet("""
+            QPushButton {
+                background-color: #5d8271;
+                color: white;
+                font-size: 20px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #4a6b5c;
+            }
+        """)
         layout.addWidget(self.toggle_button)
+
+        # --- Listen for Theme Changes ---
+        theme_manager.theme_changed.connect(self.update_background)
 
         # --- Focus (optional) ---
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
 
     def toggle_theme(self):
-        # Switch the theme
-        config.theme = 'dark' if config.theme == 'light' else 'light'
-        # Reload the background
+        theme_manager.toggle_theme()
+
+    def update_background(self):
         self.image = load_background()
-        # Update the UI
         self.update()
 
-    def start(self):
-        """Start screen logic (called when switching to this screen)."""
-        pass  # Fade handled by MainWindow
-
+    def paintEvent(self, event):
+        """Override paintEvent to draw the background."""
+        painter = QPainter(self)
+        draw_background(self, painter, self.image)

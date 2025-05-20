@@ -8,7 +8,8 @@ from Modules.metronome.logic import Timer
 import Modules.metronome.config as cfg
 from Modules.Parametres.logic import load_background, draw_background
 
-
+import config as config
+from config import theme_manager
 class MetronomeScreen(QWidget):
     def __init__(self):
         super().__init__()
@@ -59,6 +60,16 @@ class MetronomeScreen(QWidget):
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
+        
+        # --- Listen for Theme Changes ---
+        theme_manager.theme_changed.connect(self.update_background)
+
+    def toggle_theme(self):
+        theme_manager.toggle_theme()
+
+    def update_background(self):
+        self.image = load_background()
+        self.update()
 
     def play_tick(self):
         self.sound.play()
@@ -78,6 +89,7 @@ class MetronomeScreen(QWidget):
         else:
             self.pulse_color = QColor("#5d8271")  # Green
 
+
     def start(self):
         self.metronome.timer.start()
         self.pulse_timer.start()
@@ -95,16 +107,20 @@ class MetronomeScreen(QWidget):
             self.pulse_radius = max(0, self.pulse_radius - 1)
         self.update()
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
+def paintEvent(self, event):
+    painter = QPainter(self)
 
-        if self.metronome.timer.isActive():
-            painter.setRenderHint(QPainter.Antialiasing)
-            painter.setBrush(self.pulse_color)
-            painter.setPen(Qt.NoPen)
+    # Ensure the background image is scaled and centered
+    draw_background(self, painter, self.image)
 
-            # Draw pulse dot just below the label
-            center_x = self.width() // 2
-            center_y = self.height() // 2 + 40
-            r = self.pulse_radius
-            painter.drawEllipse(center_x - r, center_y - r, r * 2, r * 2)
+    # Draw the pulse indicator
+    if self.metronome.timer.isActive():
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(self.pulse_color)
+        painter.setPen(Qt.NoPen)
+
+        # Draw pulse dot just below the label
+        center_x = self.width() // 2
+        center_y = self.height() // 2 + 40
+        r = self.pulse_radius
+        painter.drawEllipse(center_x - r, center_y - r, r * 2, r * 2)
