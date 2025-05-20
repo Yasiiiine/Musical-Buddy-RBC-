@@ -9,6 +9,7 @@ from Modules.Parametres.logic import load_background, draw_background, update_ba
 import config
 from config import theme_manager
 import pyaudio
+from AudioSettingsManager import AudioSettingsManager
 
 from numpy.random import random
 import sounddevice as sd
@@ -154,8 +155,9 @@ class renderArea(QWidget):
                 self.repaint()
                 self.stabilityCounter = 0
 
-        try:
-            with sd.InputStream(callback=callback, channels=1, samplerate=44100, blocksize=4096, device=(1, None)):
+        try: 
+            device_index = AudioSettingsManager.get_input_device()
+            with sd.InputStream(callback=callback, channels=1, samplerate=44100, blocksize=4096, device=device_index) as stream:
                 while self.running:
                     sd.sleep(100)
         except Exception as e:
