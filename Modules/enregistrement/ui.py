@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont,QPainter
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFont,QPainter, QPixmap
 from Modules.enregistrement.logic import Recorder
 from Modules.Parametres.logic import load_background
 import Modules.enregistrement.config as cfg
