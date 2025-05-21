@@ -1,5 +1,5 @@
 # Dossier de sortie pour les enregistrements
-OUTPUT_DIR = "Assets/recordings/"
+OUTPUT_DIR = "recordings/"
 
 # Couleurs de l'affichage
 BG_COLOR = "#ffe6e6"

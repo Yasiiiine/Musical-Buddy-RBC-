@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSizePolicy, QHBoxLayout
 from PyQt5.QtCore import Qt, QTimer, QEvent
+from PyQt5.QtGui import QFontMetrics
 import os
 from Modules.Template4.logic import AudioPlayer
 from Modules.Parametres.logic import load_background
@@ -9,6 +10,8 @@ class Module4Screen(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.setFixedSize(480, 320)
+
         self.image = load_background()
         self.recording_buttons = []
         self.selected_index = 0
@@ -16,21 +19,20 @@ class Module4Screen(QWidget):
         self.items_per_page = 3
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.recordings_dir = os.path.join(base_dir, '..', '..', 'Assets', 'recordings')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.recordings_dir = os.path.abspath(os.path.join(base_dir, '..', '..', 'recordings'))
         self.recordings = [f for f in os.listdir(self.recordings_dir) if f.endswith('.wav')]
 
         self.player = AudioPlayer(self.recordings_dir)
 
-        # Title
         self.label = QLabel("Select a recording to play:")
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("""
-            font-size: 32px;
+            font-size: 20px;
             font-weight: bold;
             color: #2C3E50;
         """)
 
-        # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
@@ -47,16 +49,15 @@ class Module4Screen(QWidget):
             }
         """)
 
-        # Layouts
         layout = QVBoxLayout()
-        layout.setContentsMargins(40, 30, 40, 30)
-        layout.setSpacing(20)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
         layout.addWidget(self.label)
         layout.addWidget(self.progress_bar)
 
         self.recording_buttons_layout = QVBoxLayout()
-        self.recording_buttons_layout.setSpacing(10)
+        self.recording_buttons_layout.setSpacing(8)
         layout.addLayout(self.recording_buttons_layout)
 
         self.stop_button = QPushButton("Stop Playback")
@@ -86,25 +87,29 @@ class Module4Screen(QWidget):
         self.update_recording_buttons()
 
     def update_recording_buttons(self):
-        # Clear old buttons
         for i in reversed(range(self.recording_buttons_layout.count())):
             widget = self.recording_buttons_layout.itemAt(i).widget()
             if widget:
                 widget.deleteLater()
 
-        # Show a subset based on the visible window
+        max_width = 400
+        font = self.font()
+        metrics = QFontMetrics(font)
+
         end = min(self.visible_range_start + self.items_per_page, len(self.recordings))
         for i in range(self.visible_range_start, end):
-            button = QPushButton(self.recordings[i])
-            button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            full_name = self.recordings[i]
+            short_name = metrics.elidedText(full_name, Qt.ElideRight, max_width)
 
-            # Connect the button click to play the recording
-            button.clicked.connect(lambda checked, r=self.recordings[i]: self.play_recording(r))
+            button = QPushButton(short_name)
+            button.setToolTip(full_name)
+            button.setMinimumWidth(400)
+            button.setMaximumWidth(400)
+            button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-            # Add hover behavior to update selection
+            button.clicked.connect(lambda checked, r=full_name: self.play_recording(r))
             button.installEventFilter(self)
 
-            # Highlight if selected
             if i == self.selected_index:
                 button.setStyleSheet("""
                     QPushButton {
@@ -127,19 +132,25 @@ class Module4Screen(QWidget):
                         border-radius: 6px;
                     }
                 """)
-            self.recording_buttons_layout.addWidget(button)
+
+            wrapper = QWidget()
+            wrapper_layout = QHBoxLayout()
+            wrapper_layout.setContentsMargins(0, 0, 0, 0)
+            wrapper_layout.setAlignment(Qt.AlignHCenter)
+            wrapper_layout.addWidget(button)
+            wrapper.setLayout(wrapper_layout)
+
+            self.recording_buttons_layout.addWidget(wrapper)
 
     def eventFilter(self, source, event):
-        """Handle hover events to update button selection."""
         if event.type() == QEvent.Enter and isinstance(source, QPushButton):
-            # Update the selected index based on the hovered button
             for i in range(self.recording_buttons_layout.count()):
-                button = self.recording_buttons_layout.itemAt(i).widget()
+                wrapper = self.recording_buttons_layout.itemAt(i).widget()
+                button = wrapper.layout().itemAt(0).widget()
                 if button == source:
-                    # Only update styles if the hovered button is different from the current selection
                     if self.selected_index != self.visible_range_start + i:
-                        # Reset the style of the previously selected button
-                        prev_button = self.recording_buttons_layout.itemAt(self.selected_index - self.visible_range_start).widget()
+                        prev_wrapper = self.recording_buttons_layout.itemAt(self.selected_index - self.visible_range_start).widget()
+                        prev_button = prev_wrapper.layout().itemAt(0).widget()
                         prev_button.setStyleSheet("""
                             QPushButton {
                                 font-size: 14px;
@@ -150,8 +161,6 @@ class Module4Screen(QWidget):
                                 border-radius: 6px;
                             }
                         """)
-
-                        # Update the style of the newly hovered button
                         button.setStyleSheet("""
                             QPushButton {
                                 font-size: 14px;
@@ -162,8 +171,6 @@ class Module4Screen(QWidget):
                                 border-radius: 6px;
                             }
                         """)
-
-                        # Update the selected index
                         self.selected_index = self.visible_range_start + i
                     break
         return super().eventFilter(source, event)
@@ -189,7 +196,20 @@ class Module4Screen(QWidget):
 
     def play_recording(self, recording):
         self.player.play(recording)
-        self.label.setText(f"Playing: {recording}")
+
+        font = self.label.font()
+        metrics = QFontMetrics(font)
+        max_width = 400
+
+        short_name = metrics.elidedText(recording, Qt.ElideRight, max_width)
+        self.label.setText(f"Playing: {short_name}")
+        self.label.setToolTip(recording)
+
+        if short_name != recording:
+            self.label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        else:
+            self.label.setAlignment(Qt.AlignCenter)
+
         self.progress_bar.setValue(0)
         self.timer.start(1000)
 
@@ -197,6 +217,7 @@ class Module4Screen(QWidget):
         if self.player.is_playing():
             self.player.stop()
             self.label.setText("Stopped playback")
+            self.label.setAlignment(Qt.AlignCenter)
             self.progress_bar.setValue(0)
             self.timer.stop()
 
@@ -208,3 +229,4 @@ class Module4Screen(QWidget):
         if self.progress_bar.value() >= 100:
             self.timer.stop()
             self.label.setText("Playback finished")
+            self.label.setAlignment(Qt.AlignCenter)

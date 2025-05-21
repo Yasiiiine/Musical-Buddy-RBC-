@@ -2,11 +2,9 @@ import sounddevice as sd
 import numpy as np
 import wave
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal
-import Modules.enregistrement.config as cfg
 import os
-import datetime
+import Modules.enregistrement.config as cfg
 from AudioSettingsManager import AudioSettingsManager
-
 
 class Recorder(QObject):
     recording_too_short = pyqtSignal()
@@ -20,6 +18,9 @@ class Recorder(QObject):
         self.timer.timeout.connect(self._on_timer)
         self.soundlevel = 0
         self.stream = None
+
+        # Ensure the output directory exists
+        os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     def toggle_recording(self):
         if self.recording:
@@ -40,11 +41,11 @@ class Recorder(QObject):
                 dtype=cfg.FORMAT,
                 blocksize=cfg.CHUNK,
                 callback=self.callback,
-                device=device  # Uses the tuple (input_index, output_index)
+                device=device
             )
             self.stream.start()
             self.timer.start(50)
-            print(f"🎤 Recording from device {device}")
+            print(f"Recording from device {device}")
         except Exception as e:
             print(f"Error starting recording: {e}")
             self.recording = False
@@ -67,29 +68,30 @@ class Recorder(QObject):
         self.soundlevel = float(np.max(np.abs(indata)))
 
     def _on_timer(self):
-        # Can be used for updating UI if necessary
         pass
+
+    def get_next_filename(self):
+        existing_files = os.listdir(cfg.OUTPUT_DIR)
+        used_indices = [int(f[:-4]) for f in existing_files if f.endswith('.wav') and f[:-4].isdigit()]
+        next_index = 0
+        while next_index in used_indices:
+            next_index += 1
+        return os.path.join(cfg.OUTPUT_DIR, f"{next_index}.wav")
 
     def save(self):
         try:
             audio = np.concatenate(self.frames, axis=0)
             duration_seconds = len(audio) / cfg.RATE
-
             if duration_seconds <= 1.5:
                 print("Recording too short.")
                 self.short_recording = True
                 self.recording_too_short.emit()
                 return
 
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"recording_{timestamp}.wav"
-            filepath = os.path.join(cfg.OUTPUT_DIR, filename)
-
-            os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-
+            filepath = self.get_next_filename()
             with wave.open(filepath, 'wb') as wf:
                 wf.setnchannels(cfg.CHANNELS)
-                wf.setsampwidth(2)  # Assuming 16-bit PCM
+                wf.setsampwidth(2)
                 wf.setframerate(cfg.RATE)
                 wf.writeframes(audio.tobytes())
 
