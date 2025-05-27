@@ -6,9 +6,9 @@ from PyQt5.QtGui import QPixmap, QPainter
 import config
 
 import Modules.transcripteurMIDI.config as cfg
-from Modules.Parametres.logic import load_background, draw_background
 from core.styles import retro_label_font, bpm_label_style
-
+from core.base_screen import BaseScreen
+from core.theme_manager import ThemeManager
 class Module5Screen(QWidget):
     def __init__(self):
         super().__init__()
@@ -17,9 +17,6 @@ class Module5Screen(QWidget):
 
         label = QLabel(cfg.MODULE_LABEL)
         label.setAlignment(Qt.AlignCenter)
-
-
-        self.image = load_background()
 
         layout.addWidget(label)
         label.setFont(retro_label_font(32))

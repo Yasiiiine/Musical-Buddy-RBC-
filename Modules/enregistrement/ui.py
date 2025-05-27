@@ -2,11 +2,10 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont, QPainter, QPixmap
 from Modules.enregistrement.logic import Recorder
-from Modules.Parametres.logic import load_background, draw_background
 from AudioSettingsManager import AudioSettingsManager
 import Modules.enregistrement.config as cfg
 from core.styles import retro_label_font, bpm_label_style
-
+from core.theme_manager import ThemeManager
 
 
 class Record(QWidget):
@@ -27,9 +26,6 @@ class Record(QWidget):
         self.layout.addWidget(self.label, alignment=Qt.AlignBaseline)
         self.setLayout(self.layout)
 
-        # --- Background ---
-        self.image = load_background()
-
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
 
@@ -40,7 +36,6 @@ class Record(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        draw_background(self, painter, self.image)
 
         numRecord = 0
         while numRecord != 6 and self.recorder.soundlevel >= cfg.PLAGES_NIVEAU_SONORE[numRecord]:

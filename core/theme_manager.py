@@ -1,5 +1,7 @@
 # core/theme_manager.py
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, Qt
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QLabel
 
 class ThemeManager(QObject):
     theme_changed = pyqtSignal()

@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle(config.WINDOW_TITLE)
-        self.setGeometry(320, 480, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
+        self.setGeometry(480, 800, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
 
         self.movie = QMovie("Assets/TransiLM.gif")
         self.movie.setSpeed(175)
-        self.movie.setScaledSize(QSize(480, 320))
+        self.movie.setScaledSize(QSize(800, 480))
         self.movie.jumpToFrame(0)  # Preload first frame
         self.movie_label.resize(self.movie.scaledSize())
         self.movie_label.setMovie(self.movie)
