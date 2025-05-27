@@ -15,6 +15,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+# ignorer le dossiers recordings
+recordings
 
 # Ignore venv
 venv/
