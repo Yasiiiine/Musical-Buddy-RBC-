@@ -2,8 +2,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgress
 from PyQt5.QtCore import Qt, QTimer, QEvent
 import os
 from Modules.player.logic import AudioPlayer
-from Modules.Parametres.logic import load_background
 from core.styles import retro_label_font, bpm_label_style
+from core.theme_manager import ThemeManager
 ...
 
 
@@ -13,7 +13,6 @@ class Module4Screen(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.image = load_background()
         self.recording_buttons = []
         self.selected_index = 0
         self.visible_range_start = 0

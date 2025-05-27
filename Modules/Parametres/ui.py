@@ -3,18 +3,16 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter
 
 from AudioSettingsManager import AudioSettingsManager
-from Modules.Parametres.logic import load_background, draw_background
 from core.styles import retro_label_font, bpm_label_style
 import Modules.Parametres.config as cfg
 import config
 from config import theme_manager
+from core.theme_manager import ThemeManager
 
 
 class Module7Screen(QWidget):
     def __init__(self):
         super().__init__()
-
-        self.image = load_background()
 
         # --- Title Label ---
         self.label = QLabel(cfg.MODULE_LABEL)
@@ -82,9 +80,7 @@ class Module7Screen(QWidget):
         theme_manager.toggle_theme()
 
     def update_background(self):
-        self.image = load_background()
         self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        draw_background(self, painter, self.image)

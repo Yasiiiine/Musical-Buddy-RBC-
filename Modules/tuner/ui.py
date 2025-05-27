@@ -6,10 +6,9 @@ import sounddevice as sd
 import threading
 
 from Modules.tuner.TunerObject import NoteFinder
-from Modules.Parametres.logic import load_background, draw_background
 from AudioSettingsManager import AudioSettingsManager
-from config import theme_manager
 from core.styles import retro_label_font, bpm_label_style
+from core.theme_manager import ThemeManager
 
 
 class renderArea(QWidget):
@@ -32,9 +31,6 @@ class renderArea(QWidget):
         self.Layout.addStretch(1)
         self.setLayout(self.Layout)
 
-        self.image = load_background()
-        theme_manager.theme_changed.connect(self.update_background)
-
         # --- Tuner Stability ---
         self.lastStableNote = ""
         self.stabilityCounter = 0
@@ -47,7 +43,6 @@ class renderArea(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        draw_background(self, painter, self.image)
 
         y_offset = -50
         painter.setRenderHint(QPainter.Antialiasing)
@@ -126,5 +121,4 @@ class renderArea(QWidget):
         event.accept()
 
     def update_background(self):
-        self.image = load_background()
         self.update()

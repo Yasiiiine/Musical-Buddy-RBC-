@@ -2,7 +2,7 @@
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtCore import Qt, QUrl, QTimer
-from PyQt5.QtGui import QPainter, QColor, QFont
+from PyQt5.QtGui import QPainter, QColor, QFont, QPixmap
 
 import os
 
@@ -10,7 +10,6 @@ from core.base_screen import BaseScreen
 from core.theme_manager import ThemeManager
 from Modules.metronome.logic import Timer
 import Modules.metronome.config as cfg
-from Modules.Parametres.logic import load_background, draw_background
 from core.styles import retro_label_font, bpm_label_style
 
 
@@ -19,12 +18,12 @@ class MetronomeScreen(BaseScreen):
         super().__init__()
 
         self.bpm = cfg.BPM_DEFAULT
-        self.image = load_background()
 
         # --- BPM Label ---
         self.label = QLabel(f"BPM : {self.bpm}")
         self.label.setFont(retro_label_font(60))
         self.label.setStyleSheet(bpm_label_style())
+
         # --- Layout ---
         self.layout.setContentsMargins(20, 20, 20, 20)
         self.layout.setSpacing(20)
@@ -56,8 +55,9 @@ class MetronomeScreen(BaseScreen):
         self.setFocus()
         ThemeManager().theme_changed.connect(self.update_background)
 
+
+
     def update_background(self):
-        self.image = load_background()
         self.update()
 
     def play_tick(self):
@@ -96,10 +96,9 @@ class MetronomeScreen(BaseScreen):
         self.update()
 
     def paintEvent(self, event):
-        super().paintEvent(event)  # Delegate background painting to BaseScreen
+        painter = QPainter(self)
 
         if self.metronome.timer.isActive():
-            painter = QPainter(self)
             painter.setRenderHint(QPainter.Antialiasing)
             painter.setBrush(self.pulse_color)
             painter.setPen(Qt.NoPen)

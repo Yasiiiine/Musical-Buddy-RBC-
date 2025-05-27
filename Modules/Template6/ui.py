@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from Modules.Template6.logic import MusicPlayer
-from Modules.Parametres.logic import load_background
+from core.theme_manager import ThemeManager
 
 class Module6Screen(QWidget):
     def __init__(self):
@@ -16,7 +16,6 @@ class Module6Screen(QWidget):
         self.label.setStyleSheet("font-size: 32px; font-weight: bold; color: #2C3E50;")
         self.label.setFont(QFont("Arial", 24, QFont.Bold))
 
-        self.image = load_background()
 
         layout = QVBoxLayout()
         layout.setContentsMargins(40, 30, 40, 30)
