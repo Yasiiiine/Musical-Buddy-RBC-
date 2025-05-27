@@ -19,7 +19,13 @@ class AudioPlayer:
 
         audio_file = os.path.join(self.recordings_path, filename)
         if os.path.exists(audio_file):
-            self.audio_data, self.sample_rate = sf.read(audio_file)
+            data, self.sample_rate = sf.read(audio_file)
+            # Convert to mono if needed
+            if len(data.shape) > 1 and data.shape[1] > 1:
+                data = data.mean(axis=1, keepdims=True)  # Average channels for mono
+            elif len(data.shape) == 1:
+                data = data.reshape(-1, 1)  # Ensure 2D shape for mono
+            self.audio_data = data
             self.stop_flag = False
             self.is_playing_flag = True
             self.playing_thread = threading.Thread(target=self._play_audio, daemon=True)
@@ -33,13 +39,16 @@ class AudioPlayer:
             def callback(outdata, frames, time, status):
                 if status:
                     print(status)
-                with self.lock:  # Ensure thread-safe access to `self.audio_data`
+                with self.lock:
                     if self.stop_flag or self.audio_data is None:
                         raise sd.CallbackStop()
-                    # Ensure the shape of `self.audio_data` matches the expected shape of `outdata`
-                    required_frames = frames * outdata.shape[1]
-                    if len(self.audio_data) < required_frames:
-                        outdata[:len(self.audio_data)] = self.audio_data.reshape(-1, outdata.shape[1])
+                    samples_left = len(self.audio_data)
+                    if samples_left < frames:
+                        # Fill only the available samples, pad the rest with zeros
+                        outdata[:samples_left] = self.audio_data[:samples_left].reshape(-1, outdata.shape[1])
+                        if samples_left < frames:
+                            outdata[samples_left:] = 0
+                        self.audio_data = None
                         raise sd.CallbackStop()
                     else:
                         outdata[:] = self.audio_data[:frames].reshape(-1, outdata.shape[1])
