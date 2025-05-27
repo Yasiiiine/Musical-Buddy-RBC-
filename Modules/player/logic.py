@@ -15,24 +15,34 @@ class AudioPlayer:
         self.lock = threading.Lock()  # Add a lock to ensure thread-safe operations
 
     def play(self, filename):
-        self.stop()  # Stop any currently playing audio
-
+        self.stop()
+        # Ne pas refaire join ici, déjà fait dans stop()
         audio_file = os.path.join(self.recordings_path, filename)
         if os.path.exists(audio_file):
             data, self.sample_rate = sf.read(audio_file)
-            # Convert to mono if needed
             if len(data.shape) > 1 and data.shape[1] > 1:
-                data = data.mean(axis=1, keepdims=True)  # Average channels for mono
+                data = data.mean(axis=1, keepdims=True)
             elif len(data.shape) == 1:
-                data = data.reshape(-1, 1)  # Ensure 2D shape for mono
-            self.audio_data = data
-            self.stop_flag = False
-            self.is_playing_flag = True
+                data = data.reshape(-1, 1)
+            with self.lock:
+                self.audio_data = data
+                self.stop_flag = False
+                self.is_playing_flag = True
             self.playing_thread = threading.Thread(target=self._play_audio, daemon=True)
             self.playing_thread.start()
             print(f"Playing: {filename}")
         else:
             print(f"File not found: {audio_file}")
+
+    def stop(self):
+        with self.lock:
+            self.stop_flag = True
+        # Utilise un timeout pour ne pas bloquer l'UI
+        if self.playing_thread and self.playing_thread.is_alive():
+            self.playing_thread.join(timeout=1)
+        with self.lock:
+            self.is_playing_flag = False
+        print("Playback stopped.")
 
     def _play_audio(self):
         try:
@@ -44,7 +54,6 @@ class AudioPlayer:
                         raise sd.CallbackStop()
                     samples_left = len(self.audio_data)
                     if samples_left < frames:
-                        # Fill only the available samples, pad the rest with zeros
                         outdata[:samples_left] = self.audio_data[:samples_left].reshape(-1, outdata.shape[1])
                         if samples_left < frames:
                             outdata[samples_left:] = 0
@@ -55,22 +64,19 @@ class AudioPlayer:
                         self.audio_data = self.audio_data[frames:]
 
             with sd.OutputStream(samplerate=self.sample_rate, channels=1, callback=callback):
-                sd.sleep(int(len(self.audio_data) / self.sample_rate * 1000))
+                # Boucle d'attente qui vérifie régulièrement le stop_flag
+                while True:
+                    with self.lock:
+                        if self.stop_flag or self.audio_data is None:
+                            break
+                    sd.sleep(100)
         except sd.CallbackStop:
-            pass  # Gracefully handle the stop signal
+            pass
         except Exception as e:
             print(f"Error during playback: {e}")
         finally:
             with self.lock:
                 self.is_playing_flag = False
-
-    def stop(self):
-        with self.lock:
-            self.stop_flag = True
-        if self.playing_thread and self.playing_thread.is_alive():
-            self.playing_thread.join()  # Wait for the thread to finish
-        self.is_playing_flag = False
-        print("Playback stopped.")
 
     def is_playing(self):
         with self.lock:
