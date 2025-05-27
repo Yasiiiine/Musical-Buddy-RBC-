@@ -1,12 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont, QPainter, QPixmap
+from PyQt5.QtGui import QFont, QPainter, QPixmap, QTouchEvent
 from Modules.enregistrement.logic import Recorder
 from Modules.Parametres.logic import load_background, draw_background
-from AudioSettingsManager import AudioSettingsManager
 import Modules.enregistrement.config as cfg
 from core.styles import retro_label_font, bpm_label_style
-
 
 
 class Record(QWidget):
@@ -16,7 +14,7 @@ class Record(QWidget):
         self.recorder = Recorder()
 
         # --- Label Setup ---
-        self.label = QLabel("Press E to record")
+        self.label = QLabel("Press E or Tap to record")
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setFont(retro_label_font(30))
         self.label.setStyleSheet(bpm_label_style())
@@ -32,6 +30,9 @@ class Record(QWidget):
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
+
+        # Enable touch events
+        self.setAttribute(Qt.WA_AcceptTouchEvents)
 
         # --- Timer for image updates ---
         self.timer = QTimer(self)
@@ -61,16 +62,25 @@ class Record(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_E:
-            self.recorder.toggle_recording()
-
-            if self.recorder.short_recording:
-                self.label.setText("Too Short!!!!")
-                self.recorder.short_recording = False
-            elif self.recorder.recording:
-                self.label.setText("Press E to stop recording")
-            else:
-                self.label.setText("Saved! Press E to record again")
-
-            self.setFocus()
+            self.toggle_recording_action()
         else:
             super().keyPressEvent(event)
+
+    def event(self, event):
+        if event.type() == QTouchEvent.TouchBegin or event.type() == QTouchEvent.TouchEnd:
+            self.toggle_recording_action()
+            return True
+        return super().event(event)
+
+    def toggle_recording_action(self):
+        self.recorder.toggle_recording()
+
+        if self.recorder.short_recording:
+            self.label.setText("Too Short!!!!")
+            self.recorder.short_recording = False
+        elif self.recorder.recording:
+            self.label.setText("Tap or Press E to stop recording")
+        else:
+            self.label.setText("Saved! Tap or Press E to record again")
+
+        self.setFocus()

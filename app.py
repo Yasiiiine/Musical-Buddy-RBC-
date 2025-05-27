@@ -1,15 +1,13 @@
 from PyQt5.QtWidgets import (
     QMainWindow, QStackedWidget, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
 )
-from PyQt5.QtCore import Qt, QTimer, QSize, QUrl, QPropertyAnimation, QEasingCurve
+from PyQt5.QtCore import Qt, QTimer, QSize, QUrl, QPropertyAnimation, QEasingCurve, QEvent
 from PyQt5.QtGui import QMovie, QPixmap
+from PyQt5.QtWidgets import QSwipeGesture
 from PyQt5.QtMultimedia import QSoundEffect
-
-
 import os
 import config
 from core.utils import asset_path
-
 from screens import Screen, TransitionScreen
 from Modules.metronome.ui import MetronomeScreen
 from Modules.tuner.ui import renderArea
@@ -27,13 +25,12 @@ class BootupScreen(QWidget):
         self.label = QLabel(self)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("background-color: black;")
-        self.label.setScaledContents(True)  # Allow label to scale image
+        self.label.setScaledContents(True)
 
         self.movie = QMovie(asset_path("BootupLM.gif"))
         self.label.setMovie(self.movie)
         self.movie.frameChanged.connect(self.ensure_movie_size_once)
-        self._movie_scaled_applied = False  # Flag to ensure it's applied only once
-
+        self._movie_scaled_applied = False
 
         self.sound = QSoundEffect()
         self.sound.setSource(QUrl.fromLocalFile(asset_path("Bootup.wav")))
@@ -49,23 +46,15 @@ class BootupScreen(QWidget):
     def ensure_movie_size_once(self, frameNumber):
         if self._movie_scaled_applied:
             return
-
-        # Force resize logic
         self.resizeEvent(None)
-
-        # Mark as applied to avoid future redundant resizes
         self._movie_scaled_applied = True
-
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-
         window_size = self.size()
-        original_size = self.movie.scaledSize()  # Use set size or fallback
-
+        original_size = self.movie.scaledSize()
         if original_size.isEmpty():
-            original_size = QSize(480, 320)  # Fallback size if empty
-
+            original_size = QSize(480, 320)
         scaled_size = original_size.scaled(window_size, Qt.KeepAspectRatio)
         self.movie.setScaledSize(scaled_size)
         self.label.resize(scaled_size)
@@ -73,6 +62,7 @@ class BootupScreen(QWidget):
             (self.width() - scaled_size.width()) // 2,
             (self.height() - scaled_size.height()) // 2
         )
+
 
 def wrap_widget(widget):
     wrapper = QWidget()
@@ -99,7 +89,7 @@ class MainWindow(QMainWindow):
         self.bootup_screen = BootupScreen(on_finished_callback=self.start_first_screen)
         self.stack.addWidget(self.bootup_screen)
 
-        # Transition screen with BGLM
+        # Transition screen
         self.transition_screen = TransitionScreen()
         self.stack.addWidget(self.transition_screen)
 
@@ -132,7 +122,6 @@ class MainWindow(QMainWindow):
         self.background_label.setAttribute(Qt.WA_TransparentForMouseEvents)
         self.background_label.hide()
 
-
         # Transition GIF
         self.movie_label = QLabel(self)
         self.movie_label.setAlignment(Qt.AlignCenter)
@@ -142,7 +131,7 @@ class MainWindow(QMainWindow):
         self.movie = QMovie("Assets/TransiLM.gif")
         self.movie.setSpeed(175)
         self.movie.setScaledSize(QSize(480, 320))
-        self.movie.jumpToFrame(0)  # Preload first frame
+        self.movie.jumpToFrame(0)
         self.movie_label.resize(self.movie.scaledSize())
         self.movie_label.setMovie(self.movie)
         self.movie_label.hide()
@@ -153,13 +142,15 @@ class MainWindow(QMainWindow):
         self.transition_sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "woosh.wav")))
         self.transition_sound.setVolume(0.8)
 
+        # Enable swipe gestures
+        self.grabGesture(Qt.SwipeGesture)
+
     def start_first_screen(self):
-        self.background_label.show()  # Show the background now
+        self.background_label.show()
         self.stack.setCurrentIndex(self.current_index)
         screen = self.screens[0]
         if hasattr(screen, "start"):
             screen.start()
-
 
     def keyPressEvent(self, event):
         prev_screen = self.screens[self.current_index - 2]
@@ -175,25 +166,44 @@ class MainWindow(QMainWindow):
         if hasattr(prev_screen, "stop"):
             prev_screen.stop()
 
-        # Fade out current screen wrapper
         self.fade_widget(self.screen_wrappers[self.current_index - 2], 1, 0, 250,
                          on_finished=lambda: self.start_transition(next_index + 2))
 
+    def event(self, event):
+        if event.type() == QEvent.Gesture:
+            return self.handle_gesture(event)
+        return super().event(event)
+
+    def handle_gesture(self, event):
+        gesture = event.gesture(Qt.SwipeGesture)
+        if gesture:
+            if gesture.state() == Qt.GestureFinished:
+                if gesture.horizontalDirection() == QSwipeGesture.Left:
+                    self.navigate_to_next_screen()
+                elif gesture.horizontalDirection() == QSwipeGesture.Right:
+                    self.navigate_to_previous_screen()
+            return True
+        return False
+
+    def navigate_to_next_screen(self):
+        next_index = (self.current_index - 2 + 1) % len(self.screens)
+        self.start_transition(next_index + 2)
+
+    def navigate_to_previous_screen(self):
+        prev_index = (self.current_index - 2 - 1) % len(self.screens)
+        self.start_transition(prev_index + 2)
+
     def start_transition(self, next_index):
-        # Show and start the GIF immediately
         self.movie.jumpToFrame(0)
         self.movie_label.show()
         self.movie_label.raise_()
         self.movie.start()
-        self.movie_label.repaint()  # Force immediate draw
+        self.movie_label.repaint()
 
-        # Play sound as GIF starts
         self.transition_sound.play()
 
-        # Now switch to the transition screen after a short delay
         QTimer.singleShot(50, lambda: self.stack.setCurrentWidget(self.transition_screen))
         QTimer.singleShot(200, lambda: self.switch_and_fade_in(next_index))
-
 
     def switch_and_fade_in(self, index):
         self.current_index = index
@@ -219,7 +229,7 @@ class MainWindow(QMainWindow):
         anim.setEndValue(end)
         anim.setEasingCurve(QEasingCurve.InOutQuad)
 
-        self._fade_anim = anim  # Keep reference alive
+        self._fade_anim = anim
         if on_finished:
             anim.finished.connect(on_finished)
         anim.start()
