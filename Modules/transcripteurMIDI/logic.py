@@ -16,7 +16,7 @@ class Transcripteur:
         self.duration = []
         self.times = []
         self.volumes = []
-        self.tempo = 60
+        self.tempo = 40
         self.timeSignature = (4,2)
         self.keySignature = (0,SHARPS,MAJOR)
         
@@ -46,14 +46,16 @@ class Transcripteur:
         
         #Découper le signal audio
         rate, signal = read(self.PathfileToRead)
-        signalDecoupe = [signal[i: i + int(floor(rate*60/(self.tempo/16)))] for i in range(0,len(signal),int(floor(rate*60/(self.tempo/16))))]
+        signal = signal[:,0]
+        pas = int(floor(rate*60/(self.tempo*16)))
+        signalDecoupe = [signal[i: i + pas] for i in range(0,len(signal),pas)]
 
         #Parcours du signal découpé
         # # Initialisation
-        Seuil = 15 #Seuil d'amplitude pour compter une note. L'amplitude examinée est celle de la fréquence maximale de la DSE.
-        CD = 0 # Durée de la note courante (Current Duration)
-        CT = 0 # Temps courant dans la portée (Current Time)
-        CN = 69 # Note courante (Current Note)
+        Seuil = 15
+        CD = 0
+        CT = 0
+        CN = 69
         arrayNote = []
         arrayDuration = []
         arrayTime = []
@@ -80,63 +82,10 @@ class Transcripteur:
                     CD = 1/16
             CT += 1/16
         
-        #Fin: Obtenir la durée de la dernière note si ce n'est pas un silence
         if CD != 0:
             arrayDuration.append(CD)
 
-        #Mise à jour des paramètres du Transcripteur
         self.arrayNotes = arrayNote
         self.duration = arrayDuration
         self.times = arrayTime
-        return
-    
-    def testAlgorithme(self): #Algorithme fonctionnel
-        #Signal test ( tableau [(Amplitude,Note)] )
-        signalAudioTest = [(0,69), (15,69), (15,69), (13,68), (15,68), (16,68), (23,60), (23,60), (23,60), (0,69), (16,75), (16,75)]
-
-        Seuil = 15
-        CD = 0
-        CT = 0
-        CN = 69
-        arrayNote = []
-        arrayDuration = []
-        arrayTime = []
-        for i in range(len(signalAudioTest)):
-            Amp = signalAudioTest[i][0]
-            NoteMIDI = signalAudioTest[i][1]
-            if Amp < Seuil:
-                if CD != 0:
-                    arrayDuration.append(CD)
-                    CD = 0
-                CN = 0
-            else:
-                if NoteMIDI == CN:
-                    CD += 1/16
-                else:
-                    CN = NoteMIDI
-                    arrayNote.append(CN)
-                    arrayTime.append(CT)
-                    if CD != 0:
-                        arrayDuration.append(CD)
-                    CD = 1/16
-            CT += 1/16
-        if CD != 0:
-            arrayDuration.append(CD)
-        self.arrayNotes = arrayNote
-        self.duration = arrayDuration
-        self.times = arrayTime
-        return
-    
-    def testTranscript(self): #Fonctionnel
-        times = [i/5 for i in range(0,10)]
-        durations = [1/5 for i in range(1,11)]
-        volumes = [60 for i in range(1,11)]
-        pitches = [60,62,64,66,67,69,71,72,74,76]
-
-        self.arrayNotes = pitches
-        self.times = times
-        self.duration = durations
-        self.volumes = volumes
-
-        self.transcript()
         return
