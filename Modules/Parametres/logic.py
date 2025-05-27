@@ -12,15 +12,17 @@ def load_background():
         raise FileNotFoundError(f"Background image not found: {bg_path}")
     return pixmap
 
-from PyQt5.QtCore import Qt
+def draw_background(widget, painter, image):
+    if not image or image.isNull():
+        return
 
-def draw_background(widget, painter, pixmap):
-    """Draws a scaled and centered background image on the given widget."""
-    if not pixmap.isNull():
-        scaled = pixmap.scaled(widget.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
-        x_offset = (widget.width() - scaled.width()) // 2
-        y_offset = (widget.height() - scaled.height()) // 2
-        painter.drawPixmap(x_offset, y_offset, scaled)
+    widget_size = widget.size()
+    scaled = image.scaled(widget_size, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+
+    # Center the image
+    x = (widget.width() - scaled.width()) // 2
+    y = (widget.height() - scaled.height()) // 2
+    painter.drawPixmap(x, y, scaled)
         
 def update_background(self):
     self.image = load_background()

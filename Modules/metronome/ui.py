@@ -1,16 +1,20 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QSpacerItem, QSizePolicy
+# modules/metronome/ui.py
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QSpacerItem, QSizePolicy
 from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtCore import Qt, QUrl, QTimer
 from PyQt5.QtGui import QPainter, QColor, QFont
+
 import os
 
+from core.base_screen import BaseScreen
+from core.theme_manager import ThemeManager
 from Modules.metronome.logic import Timer
 import Modules.metronome.config as cfg
 from Modules.Parametres.logic import load_background, draw_background
+from core.styles import retro_label_font, bpm_label_style
 
-import config as config
-from config import theme_manager
-class MetronomeScreen(QWidget):
+
+class MetronomeScreen(BaseScreen):
     def __init__(self):
         super().__init__()
 
@@ -19,27 +23,17 @@ class MetronomeScreen(QWidget):
 
         # --- BPM Label ---
         self.label = QLabel(f"BPM : {self.bpm}")
-        self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("""
-            font-size: 42px;
-            font-weight: bold;
-            color: #2C3E50;
-            padding-bottom: 10px;
-        """)
-
+        self.label.setFont(retro_label_font(60))
+        self.label.setStyleSheet(bpm_label_style())
         # --- Layout ---
-        layout = QVBoxLayout()
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(20)
+        self.layout.setContentsMargins(20, 20, 20, 20)
+        self.layout.setSpacing(20)
+        self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.layout.addWidget(self.label, alignment=Qt.AlignCenter)
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed))
+        self.layout.addSpacerItem(QSpacerItem(20, 70, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
-        layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        layout.addWidget(self.label, alignment=Qt.AlignCenter)
-        layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed))
-        layout.addSpacerItem(QSpacerItem(20, 70, QSizePolicy.Minimum, QSizePolicy.Expanding))  # Balance bottom
-
-        self.setLayout(layout)
-
-        # --- Pulse Indicator ---
+        # --- Pulse State ---
         self.pulse_radius = 0
         self.pulse_grow = True
         self.pulse_color = QColor("#5d8271")
@@ -48,24 +42,19 @@ class MetronomeScreen(QWidget):
         self.pulse_timer.setInterval(16)  # ~60 FPS
         self.pulse_timer.timeout.connect(self.update_pulse)
 
-        # --- Sound ---
+        # --- Sound Effect ---
         self.sound = QSoundEffect()
         self.sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "tic.wav")))
         self.sound.setVolume(0.8)
 
-        # --- Metronome ---
+        # --- Metronome Logic ---
         self.metronome = Timer(bpm=self.bpm)
         self.metronome.tick.connect(self.play_tick)
         self.metronome.timer.stop()
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
-        
-        # --- Listen for Theme Changes ---
-        theme_manager.theme_changed.connect(self.update_background)
-
-    def toggle_theme(self):
-        theme_manager.toggle_theme()
+        ThemeManager().theme_changed.connect(self.update_background)
 
     def update_background(self):
         self.image = load_background()
@@ -89,7 +78,6 @@ class MetronomeScreen(QWidget):
         else:
             self.pulse_color = QColor("#5d8271")  # Green
 
-
     def start(self):
         self.metronome.timer.start()
         self.pulse_timer.start()
@@ -107,20 +95,15 @@ class MetronomeScreen(QWidget):
             self.pulse_radius = max(0, self.pulse_radius - 1)
         self.update()
 
-def paintEvent(self, event):
-    painter = QPainter(self)
+    def paintEvent(self, event):
+        super().paintEvent(event)  # Delegate background painting to BaseScreen
 
-    # Ensure the background image is scaled and centered
-    draw_background(self, painter, self.image)
-
-    # Draw the pulse indicator
-    if self.metronome.timer.isActive():
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.setBrush(self.pulse_color)
-        painter.setPen(Qt.NoPen)
-
-        # Draw pulse dot just below the label
-        center_x = self.width() // 2
-        center_y = self.height() // 2 + 40
-        r = self.pulse_radius
-        painter.drawEllipse(center_x - r, center_y - r, r * 2, r * 2)
+        if self.metronome.timer.isActive():
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+            painter.setBrush(self.pulse_color)
+            painter.setPen(Qt.NoPen)
+            cx = self.width() // 2
+            cy = self.height() // 2 + 40
+            r = self.pulse_radius
+            painter.drawEllipse(cx - r, cy - r, r * 2, r * 2)

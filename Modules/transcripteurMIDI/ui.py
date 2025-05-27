@@ -7,6 +7,7 @@ import config
 
 import Modules.transcripteurMIDI.config as cfg
 from Modules.Parametres.logic import load_background, draw_background
+from core.styles import retro_label_font, bpm_label_style
 
 class Module5Screen(QWidget):
     def __init__(self):
@@ -16,9 +17,11 @@ class Module5Screen(QWidget):
 
         label = QLabel(cfg.MODULE_LABEL)
         label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("font-size: 32px; font-weight: bold;")
+
 
         self.image = load_background()
 
         layout.addWidget(label)
+        label.setFont(retro_label_font(32))
+        label.setStyleSheet(bpm_label_style())
         self.setLayout(layout)

@@ -9,6 +9,8 @@ from Modules.tuner.TunerObject import NoteFinder
 from Modules.Parametres.logic import load_background, draw_background
 from AudioSettingsManager import AudioSettingsManager
 from config import theme_manager
+from core.styles import retro_label_font, bpm_label_style
+
 
 class renderArea(QWidget):
     def __init__(self):
@@ -18,11 +20,10 @@ class renderArea(QWidget):
         self.noteHeard = False
 
         # --- UI Setup ---
-        font = QFont("Arial", 60, QFont.Bold)
         self.LabelNote = QLabel("A4")
-        self.LabelNote.setFont(font)
+        self.LabelNote.setFont(retro_label_font(110))
         self.LabelNote.setAlignment(Qt.AlignCenter)
-        self.LabelNote.setStyleSheet("color: #2C3E50;")
+        self.LabelNote.setStyleSheet(bpm_label_style())
 
         self.Layout = QVBoxLayout()
         self.Layout.setContentsMargins(0, 30, 0, 0)

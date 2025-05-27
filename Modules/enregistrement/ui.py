@@ -5,22 +5,21 @@ from Modules.enregistrement.logic import Recorder
 from Modules.Parametres.logic import load_background, draw_background
 from AudioSettingsManager import AudioSettingsManager
 import Modules.enregistrement.config as cfg
+from core.styles import retro_label_font, bpm_label_style
 
 
-class Module3Screen(QWidget):
+
+class Record(QWidget):
     def __init__(self):
         super().__init__()
 
         self.recorder = Recorder()
 
-        # --- Font Setup ---
-        font = QFont("Arial", 15, QFont.Bold, italic=False)
-
         # --- Label Setup ---
         self.label = QLabel("Press E to record")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setFont(font)
-        self.label.setStyleSheet("color: #2C3E50;")
+        self.label.setFont(retro_label_font(30))
+        self.label.setStyleSheet(bpm_label_style())
 
         # --- Layout ---
         self.layout = QVBoxLayout()

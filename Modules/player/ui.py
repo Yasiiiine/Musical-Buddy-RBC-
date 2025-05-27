@@ -1,8 +1,12 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSizePolicy
 from PyQt5.QtCore import Qt, QTimer, QEvent
 import os
-from Modules.Template4.logic import AudioPlayer
+from Modules.player.logic import AudioPlayer
 from Modules.Parametres.logic import load_background
+from core.styles import retro_label_font, bpm_label_style
+...
+
+
 
 
 class Module4Screen(QWidget):
@@ -24,11 +28,8 @@ class Module4Screen(QWidget):
         # Title
         self.label = QLabel("Select a recording to play:")
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("""
-            font-size: 32px;
-            font-weight: bold;
-            color: #2C3E50;
-        """)
+        self.label.setFont(retro_label_font(32))
+        self.label.setStyleSheet(bpm_label_style())
 
         # Progress Bar
         self.progress_bar = QProgressBar()

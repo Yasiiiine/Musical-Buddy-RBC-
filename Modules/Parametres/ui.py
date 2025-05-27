@@ -4,6 +4,7 @@ from PyQt5.QtGui import QPainter
 
 from AudioSettingsManager import AudioSettingsManager
 from Modules.Parametres.logic import load_background, draw_background
+from core.styles import retro_label_font, bpm_label_style
 import Modules.Parametres.config as cfg
 import config
 from config import theme_manager
@@ -18,11 +19,8 @@ class Module7Screen(QWidget):
         # --- Title Label ---
         self.label = QLabel(cfg.MODULE_LABEL)
         self.label.setAlignment(Qt.AlignCenter)
-        self.label.setStyleSheet("""
-            font-size: 32px;
-            font-weight: bold;
-            color: #2C3E50;
-        """)
+        self.label.setFont(retro_label_font(32))
+        self.label.setStyleSheet(bpm_label_style())
 
         # --- Toggle Theme Button ---
         self.toggle_button = QPushButton("Toggle Theme")
