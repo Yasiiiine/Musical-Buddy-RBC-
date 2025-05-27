@@ -2,8 +2,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QStackedWidget, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
 )
 from PyQt5.QtCore import Qt, QTimer, QSize, QUrl, QPropertyAnimation, QEasingCurve, QEvent
-from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QSwipeGesture
+from PyQt5.QtGui import QMovie, QPixmap, QKeyEvent
 from PyQt5.QtMultimedia import QSoundEffect
 import os
 import config
@@ -171,19 +170,32 @@ class MainWindow(QMainWindow):
 
     def event(self, event):
         if event.type() == QEvent.Gesture:
+            print("Gesture event detected")
             return self.handle_gesture(event)
         return super().event(event)
 
     def handle_gesture(self, event):
         gesture = event.gesture(Qt.SwipeGesture)
         if gesture:
+            print(f"Gesture detected: {gesture}")
             if gesture.state() == Qt.GestureFinished:
-                if gesture.horizontalDirection() == QSwipeGesture.Left:
-                    self.navigate_to_next_screen()
-                elif gesture.horizontalDirection() == QSwipeGesture.Right:
-                    self.navigate_to_previous_screen()
+                print("Gesture finished")
+                if gesture.horizontalDirection() == Qt.RightToLeft:
+                    print("Swipe Right to Left detected")
+                    self.keyPressEvent(self.create_key_event(Qt.Key_D))  # Simulate pressing D
+                elif gesture.horizontalDirection() == Qt.LeftToRight:
+                    print("Swipe Left to Right detected")
+                    self.keyPressEvent(self.create_key_event(Qt.Key_Q))  # Simulate pressing Q
+            else:
+                print(f"Gesture state: {gesture.state()}")
             return True
+        print("No swipe gesture detected")
         return False
+
+    def create_key_event(self, key):
+        """Helper method to create a QKeyEvent."""
+        print(f"Simulating key press: {key}")
+        return QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier)
 
     def navigate_to_next_screen(self):
         next_index = (self.current_index - 2 + 1) % len(self.screens)
