@@ -1,16 +1,15 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QMovie, QPainter, QPixmap
-
-from Modules.Parametres.logic import load_background, draw_background  # or wherever you defined it
-
+from core.theme_manager import ThemeManager
+from config import theme_manager
 
 class TransitionScreen(QWidget):
     def __init__(self):
         super().__init__()
-
+        
         self.image_label = QLabel(self)
-        self.image_label.setPixmap(QPixmap("Assets/BGLM.png"))
+        self.image_label.setPixmap(QPixmap(theme_manager.get_background_path()))
         self.image_label.setScaledContents(True)
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setAttribute(Qt.WA_TransparentForMouseEvents)
@@ -37,7 +36,7 @@ class Screen(QWidget):
         
         self.setLayout(layout)
         movie = QMovie("Assets/BootupLM.gif")
-        movie.setScaledSize(QSize(480, 320))
+        movie.setScaledSize(QSize(800, 480))
         MovieLabel.setMovie(movie)
         layout.addWidget(MovieLabel)
         movie.start()

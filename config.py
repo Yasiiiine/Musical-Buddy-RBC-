@@ -1,9 +1,11 @@
 from PyQt5.QtGui import QPainter
-from Modules.Parametres.logic import draw_background
+from core.theme_manager import ThemeManager
 
-WINDOW_WIDTH = 480
-WINDOW_HEIGHT = 320
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 480
 WINDOW_TITLE = "Musical Buddy"
-BG = "Assets/BGLM.png"
+BGList = ["Assets/BGLM.png", "Assets/BGDM.png"]
+
+theme_manager = ThemeManager()
 bootup = "Assets/Bootup.wav"
-theme = 'light'
+

@@ -5,14 +5,16 @@ from PyQt5.QtCore import Qt, QTimer, QSize, QUrl, QPropertyAnimation, QEasingCur
 from PyQt5.QtGui import QMovie, QPixmap
 from PyQt5.QtMultimedia import QSoundEffect
 
+
 import os
 import config
+from core.utils import asset_path
 
 from screens import Screen, TransitionScreen
 from Modules.metronome.ui import MetronomeScreen
 from Modules.tuner.ui import renderArea
-from Modules.enregistrement.ui import Module3Screen
-from Modules.Template4.ui import Module4Screen
+from Modules.enregistrement.ui import Record
+from Modules.player.ui import Module4Screen
 from Modules.transcripteurMIDI.ui import Module5Screen
 from Modules.Template6.ui import Module6Screen
 from Modules.Parametres.ui import Module7Screen
@@ -27,14 +29,14 @@ class BootupScreen(QWidget):
         self.label.setStyleSheet("background-color: black;")
         self.label.setScaledContents(True)  # Allow label to scale image
 
-        self.movie = QMovie("Assets/BootupLM.gif")
+        self.movie = QMovie(asset_path("BootupLM.gif"))
         self.label.setMovie(self.movie)
         self.movie.frameChanged.connect(self.ensure_movie_size_once)
         self._movie_scaled_applied = False  # Flag to ensure it's applied only once
 
 
         self.sound = QSoundEffect()
-        self.sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "Bootup.wav")))
+        self.sound.setSource(QUrl.fromLocalFile(asset_path("Bootup.wav")))
         self.sound.setVolume(0.8)
 
         self.movie.start()
@@ -72,9 +74,6 @@ class BootupScreen(QWidget):
             (self.height() - scaled_size.height()) // 2
         )
 
-
-
-
 def wrap_widget(widget):
     wrapper = QWidget()
     layout = QVBoxLayout(wrapper)
@@ -88,7 +87,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle(config.WINDOW_TITLE)
-        self.setGeometry(320, 480, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
+        self.setGeometry(480, 800, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -109,7 +108,7 @@ class MainWindow(QMainWindow):
             Screen(0),
             MetronomeScreen(),
             renderArea(),
-            Module3Screen(),
+            Record(),
             Module4Screen(),
             Module5Screen(),
             Module6Screen(),
@@ -126,7 +125,7 @@ class MainWindow(QMainWindow):
 
         # Background image
         self.background_label = QLabel(self)
-        self.background_label.setPixmap(QPixmap("Assets/BGLM.png"))
+        self.background_label.setPixmap(QPixmap(asset_path("BGLM.png")))
         self.background_label.setScaledContents(True)
         self.background_label.setGeometry(self.rect())
         self.background_label.lower()
@@ -142,7 +141,7 @@ class MainWindow(QMainWindow):
 
         self.movie = QMovie("Assets/TransiLM.gif")
         self.movie.setSpeed(175)
-        self.movie.setScaledSize(QSize(480, 320))
+        self.movie.setScaledSize(QSize(800, 480))
         self.movie.jumpToFrame(0)  # Preload first frame
         self.movie_label.resize(self.movie.scaledSize())
         self.movie_label.setMovie(self.movie)
