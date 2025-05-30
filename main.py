@@ -5,5 +5,6 @@ import sys
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
-    window.showFullScreen()
+    window.show()
+    #window.showFullScreen()
     sys.exit(app.exec_())

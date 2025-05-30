@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QStackedWidget, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect
+    QMainWindow, QStackedWidget, QWidget, QLabel, QVBoxLayout, QGraphicsOpacityEffect, QPushButton, QHBoxLayout
 )
 from PyQt5.QtCore import Qt, QTimer, QSize, QUrl, QPropertyAnimation, QEasingCurve
-from PyQt5.QtGui import QMovie, QPixmap
+from PyQt5.QtGui import QMovie, QPixmap, QIcon
 from PyQt5.QtMultimedia import QSoundEffect
 
 
@@ -27,13 +27,15 @@ class BootupScreen(QWidget):
         self.label = QLabel(self)
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("background-color: black;")
-        self.label.setScaledContents(True)  # Allow label to scale image
+        self.label.setScaledContents(True)
+        self.label.setAttribute(Qt.WA_TransparentForMouseEvents, True)  # <-- Add this line
 
         self.movie = QMovie(asset_path("BootupLM.gif"))
         self.label.setMovie(self.movie)
         self.movie.frameChanged.connect(self.ensure_movie_size_once)
-        self._movie_scaled_applied = False  # Flag to ensure it's applied only once
+        self._movie_scaled_applied = False
 
+        self._on_finished_callback = on_finished_callback
 
         self.sound = QSoundEffect()
         self.sound.setSource(QUrl.fromLocalFile(asset_path("Bootup.wav")))
@@ -73,6 +75,10 @@ class BootupScreen(QWidget):
             (self.width() - scaled_size.width()) // 2,
             (self.height() - scaled_size.height()) // 2
         )
+    
+    def mousePressEvent(self, event):
+        if self._on_finished_callback:
+            self._on_finished_callback()
 
 def wrap_widget(widget):
     wrapper = QWidget()
@@ -89,8 +95,15 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(config.WINDOW_TITLE)
         self.setGeometry(600, 1024, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
 
+        # Create a container widget and layout
+        container = QWidget()
+        main_layout = QVBoxLayout(container)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Create your stack as before
         self.stack = QStackedWidget()
-        self.setCentralWidget(self.stack)
+        main_layout.addWidget(self.stack)
 
         self.screens = []
         self.screen_wrappers = []
@@ -148,10 +161,79 @@ class MainWindow(QMainWindow):
         self.movie_label.hide()
         self.center_movie_label()
 
+
         # Woosh sound
         self.transition_sound = QSoundEffect()
         self.transition_sound.setSource(QUrl.fromLocalFile(os.path.join("Assets", "woosh.wav")))
         self.transition_sound.setVolume(0.8)
+
+        # Navigation buttons
+        nav_layout = QHBoxLayout()
+        nav_layout.setContentsMargins(10, 10, 10, 10)
+        nav_layout.setSpacing(20)
+
+        # Navigation buttons with PNG icons
+        self.left_button = QPushButton()
+        self.right_button = QPushButton()
+        self.left_button.setIcon(QIcon("Assets/left.png"))
+        self.right_button.setIcon(QIcon("Assets/right.png"))
+        self.left_button.setIconSize(QSize(80, 80))  # Adjust size as needed
+        self.right_button.setIconSize(QSize(80, 80))
+        self.left_button.setStyleSheet("background: transparent; border: none;")
+        self.right_button.setStyleSheet("background: transparent; border: none;")
+
+
+        self.left_button.clicked.connect(self.go_left)
+        self.right_button.clicked.connect(self.go_right)
+
+        # Overlay navigation buttons
+        self.left_button.setParent(self)
+        self.right_button.setParent(self)
+        self.left_button.raise_()
+        self.right_button.raise_()
+        self.left_button.show()
+        self.right_button.show()
+        self.update_nav_buttons_position()
+
+
+        nav_layout.addWidget(self.left_button)
+        nav_layout.addStretch()
+        nav_layout.addWidget(self.right_button)
+
+        self.setCentralWidget(container)
+        
+
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.background_label.setGeometry(self.rect())
+        self.center_movie_label()
+        self.update_nav_buttons_position()
+
+    def update_nav_buttons_position(self):
+        btn_size = self.left_button.iconSize()
+        y = (self.height() - btn_size.height()) // 2
+        margin = 40  # distance from the edge, adjust as needed
+        self.left_button.setGeometry(margin, y, btn_size.width(), btn_size.height())
+        self.right_button.setGeometry(self.width() - btn_size.width() - margin, y, btn_size.width(), btn_size.height())
+
+    def go_left(self):
+        # Simulate pressing Q (previous screen)
+        prev_screen = self.screens[self.current_index - 2]
+        next_index = (self.current_index - 2 - 1) % len(self.screens)
+        if hasattr(prev_screen, "stop"):
+            prev_screen.stop()
+        self.fade_widget(self.screen_wrappers[self.current_index - 2], 1, 0, 250,
+                         on_finished=lambda: self.start_transition(next_index + 2))
+
+    def go_right(self):
+        # Simulate pressing D (next screen)
+        prev_screen = self.screens[self.current_index - 2]
+        next_index = (self.current_index - 2 + 1) % len(self.screens)
+        if hasattr(prev_screen, "stop"):
+            prev_screen.stop()
+        self.fade_widget(self.screen_wrappers[self.current_index - 2], 1, 0, 250,
+                         on_finished=lambda: self.start_transition(next_index + 2))
 
     def start_first_screen(self):
         self.background_label.show()  # Show the background now
@@ -193,6 +275,9 @@ class MainWindow(QMainWindow):
         # Now switch to the transition screen after a short delay
         QTimer.singleShot(50, lambda: self.stack.setCurrentWidget(self.transition_screen))
         QTimer.singleShot(200, lambda: self.switch_and_fade_in(next_index))
+        self.left_button.raise_()
+        self.right_button.raise_()
+        self.movie_label.raise_()
 
 
     def switch_and_fade_in(self, index):
@@ -207,6 +292,9 @@ class MainWindow(QMainWindow):
         wrapper.setGraphicsEffect(None)
         self.fade_widget(wrapper, 0, 1, 300)
         QTimer.singleShot(500, self.movie_label.hide)
+        self.left_button.raise_()
+        self.right_button.raise_()
+        self.movie_label.raise_()
 
     def fade_widget(self, widget, start, end, duration, on_finished=None):
         effect = QGraphicsOpacityEffect()

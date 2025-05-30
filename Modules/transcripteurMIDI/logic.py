@@ -1,92 +1,132 @@
+# Modules/transcripteurMIDI/logic.py
+
 from midiutil import MIDIFile
-from midiutil.MidiFile import SHARPS,FLATS,MAJOR,MINOR
 from scipy.io.wavfile import read
 from Modules.tuner.TunerObject import NoteFinder
-from numpy import floor
+from numpy import floor, log2
 
 class Transcripteur:
     def __init__(self):
-        self.dicoNote = {'C':0, 'C#':1, 'D':2, 'D#':3, 'E':4, 'F':5, 'F#':6, 'G':7, 'G#':8, 'A':9, 'A#':10, 'B':11}
+        # semitone offsets within an octave
+        self.dicoNote = {
+            'C':0, 'C#':1, 'D':2, 'D#':3, 'E':4,
+            'F':5, 'F#':6, 'G':7, 'G#':8, 'A':9,
+            'A#':10,'B':11
+        }
         self.noteTool = NoteFinder()
         self.midifile = MIDIFile(1)
-        
+
+        # input/output paths set by UI
         self.PathfileToRead = "eqt-major-sc.wav"
-        self.outputFile = "newMidi.mid"
-        
+        self.outputFile     = "newMidi.mid"
+
+        # results
         self.arrayNotes = []
-        self.duration = []
-        self.times = []
-        self.volumes = []
-        self.tempo = 40
-        self.timeSignature = (4,2)
-        self.keySignature = (0,SHARPS,MAJOR)
-        
-    def selectInputFile(self, InputFilePath = "."):
-        self.PathfileToRead = InputFilePath
-        return
-    
-    def selectOutputFile(self, OutputFilePath = "newMidi.mid"):
-        self.outputFile = OutputFilePath
-        return
-    
-    def transcript(self): 
-        self.midifile.addKeySignature(0, 0, self.keySignature[0], self.keySignature[1], self.keySignature[2])
+        self.times      = []
+        self.duration   = []
+
+        # parameters
+        self.tempo            = 40      # BPM
+        self.silenceThreshold = 15      # amplitude below which we consider “silence”
+        self.min_silence      = 2       # require this many consecutive silent blocks before closing note
+
+    def selectInputFile(self, path):
+        self.PathfileToRead = path
+
+    def selectOutputFile(self, path):
+        self.outputFile = path
+
+    def transcript(self):
+        """Write out absolute‐pitch MIDI (no key signature)."""
+        # only set tempo; no key or time signature
         self.midifile.addTempo(0, 0, self.tempo)
-        self.midifile.addTimeSignature(0, 0, self.timeSignature[0], self.timeSignature[1], 24)
 
-        for i in range(len(self.arrayNotes)):
-            self.midifile.addNote(0, 0, self.arrayNotes[i], self.times[i], self.duration[i], 60) # '60' à remplaer par le self.volumes[i] si on tient compte du volume
-        
-        with open(self.outputFile, "wb") as output_file:
-            self.midifile.writeFile(output_file)
-            output_file.close()
+        for pitch, start, dur in zip(self.arrayNotes, self.times, self.duration):
+            self.midifile.addNote(
+                track=0, channel=0,
+                pitch=pitch,
+                time=start,
+                duration=dur,
+                volume=100
+            )
+
+        with open(self.outputFile, "wb") as f:
+            self.midifile.writeFile(f)
+
+        # reset for next run
         self.midifile = MIDIFile(1)
-        return
-    
-    def getNotesFromFile(self): #Algortihme à finir: bonne découpe du signal et bon pas de temps/durée pour le parcours.
-        
-        #Découper le signal audio
+
+    def getNotesFromFile(self):
+        """Fill self.arrayNotes, self.times, self.duration with absolute‐pitch data."""
         rate, signal = read(self.PathfileToRead)
-        signal = signal[:,0]
-        pas = int(floor(rate*60/(self.tempo*16)))
-        signalDecoupe = [signal[i: i + pas] for i in range(0,len(signal),pas)]
 
-        #Parcours du signal découpé
-        # # Initialisation
-        Seuil = 15
-        CD = 0
-        CT = 0
-        CN = 69
-        arrayNote = []
-        arrayDuration = []
-        arrayTime = []
+        # stereo → mono
+        if signal.ndim > 1:
+            signal = signal[:,0]
 
-        # # Parcours
-        for i in range(len(signalDecoupe)):
-            self.noteTool.getNote(rate,signalDecoupe[i])
-            Amp = self.noteTool.currentAmplitude
-            NoteMIDI = (self.noteTool.currentOrdre + 1)*12 + self.dicoNote[self.noteTool.currentNote]
+        # block size so that 16 blocks = 1 beat
+        block_size = int(floor(rate * 60 / (self.tempo * 16)))
+        blocks = [
+            signal[i:i+block_size]
+            for i in range(0, len(signal), block_size)
+        ]
 
-            if Amp < Seuil:
-                if CD != 0:
-                    arrayDuration.append(CD)
-                    CD = 0
+        notes, times, durs = [], [], []
+        CD, CT = 0.0, 0.0               # current duration, current beat‐time
+        current_pitch = None
+        silence_count = 0
+
+        for blk in blocks:
+            # detect pitch & amplitude
+            self.noteTool.getNote(rate, blk)
+            amp  = self.noteTool.currentAmplitude
+            # compute absolute MIDI from frequency if available, else from octave+note
+            freq = getattr(self.noteTool, "currentFrequency", None)
+            if freq and freq > 0:
+                midi = int(round(69 + 12 * log2(freq / 440.0)))
             else:
-                if NoteMIDI == CN:
+                midi = (
+                    (self.noteTool.currentOrdre + 1) * 12
+                    + self.dicoNote[self.noteTool.currentNote]
+                )
+
+            if amp < self.silenceThreshold:
+                # accumulate silence
+                silence_count += 1
+                if silence_count >= self.min_silence and CD > 0:
+                    # close out the note
+                    notes.append(current_pitch)
+                    times.append(CT - CD)
+                    durs.append(CD)
+                    CD = 0.0
+                    current_pitch = None
+            else:
+                # audible block
+                silence_count = 0
+                if current_pitch is None:
+                    # start brand new note
+                    current_pitch = midi
+                    CD = 1/16
+                elif midi == current_pitch:
+                    # same note, extend
                     CD += 1/16
                 else:
-                    CN = NoteMIDI
-                    arrayNote.append(CN)
-                    arrayTime.append(CT)
-                    if CD != 0:
-                        arrayDuration.append(CD)
-                    CD = 1/16
-            CT += 1/16
-        
-        if CD != 0:
-            arrayDuration.append(CD)
+                    # pitch changed abruptly: close old and open new
+                    notes.append(current_pitch)
+                    times.append(CT - CD)
+                    durs.append(CD)
 
-        self.arrayNotes = arrayNote
-        self.duration = arrayDuration
-        self.times = arrayTime
-        return
+                    current_pitch = midi
+                    CD = 1/16
+
+            CT += 1/16
+
+        # flush final note
+        if CD > 0 and current_pitch is not None:
+            notes.append(current_pitch)
+            times.append(CT - CD)
+            durs.append(CD)
+
+        self.arrayNotes = notes
+        self.times      = times
+        self.duration   = durs
