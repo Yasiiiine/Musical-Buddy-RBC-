@@ -77,7 +77,13 @@ class Module7Screen(QWidget):
         self.setFocus()
 
     def toggle_theme(self):
-        theme_manager.toggle_theme()
+        theme_manager.toggle_dark_mode()
+
+        # Update background in all screens
+        for i in range(self.manager.count()):
+            screen = self.manager.widget(i)
+            if hasattr(screen, "refresh_background"):
+                screen.refresh_background()
 
     def update_background(self):
         self.update()

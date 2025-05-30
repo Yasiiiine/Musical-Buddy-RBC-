@@ -36,7 +36,7 @@ class Screen(QWidget):
         
         self.setLayout(layout)
         movie = QMovie("Assets/BootupLM.gif")
-        movie.setScaledSize(QSize(800, 480))
+        movie.setScaledSize(QSize(1024, 600))
         MovieLabel.setMovie(movie)
         layout.addWidget(MovieLabel)
         movie.start()

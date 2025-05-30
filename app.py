@@ -64,7 +64,7 @@ class BootupScreen(QWidget):
         original_size = self.movie.scaledSize()  # Use set size or fallback
 
         if original_size.isEmpty():
-            original_size = QSize(480, 320)  # Fallback size if empty
+            original_size = QSize(1024, 600)  # Fallback size if empty
 
         scaled_size = original_size.scaled(window_size, Qt.KeepAspectRatio)
         self.movie.setScaledSize(scaled_size)
@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle(config.WINDOW_TITLE)
-        self.setGeometry(480, 800, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
+        self.setGeometry(600, 1024, config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
 
         self.movie = QMovie("Assets/TransiLM.gif")
         self.movie.setSpeed(175)
-        self.movie.setScaledSize(QSize(800, 480))
+        self.movie.setScaledSize(QSize(1024, 600))
         self.movie.jumpToFrame(0)  # Preload first frame
         self.movie_label.resize(self.movie.scaledSize())
         self.movie_label.setMovie(self.movie)
