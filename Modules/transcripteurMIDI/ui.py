@@ -1,175 +1,164 @@
-# Modules/transcripteurMIDI/ui.py
-
 import os
 from PyQt5.QtWidgets import (
-    QLabel, QVBoxLayout, QPushButton, QHBoxLayout,
-    QFileDialog, QMessageBox, QSpacerItem, QSizePolicy
+    QLabel, QVBoxLayout, QPushButton, QScrollArea, QWidget, QMessageBox
 )
 from PyQt5.QtCore import Qt
 from core.base_screen import BaseScreen
 from Modules.transcripteurMIDI.logic import Transcripteur
-import Modules.transcripteurMIDI.config as cfg
 
-# corrected path into Assets/recordings
 RECORDINGS_PATH = os.path.normpath(
-    os.path.join(os.path.dirname(__file__),
-                 '..', '..', 'Assets', 'recordings')
+    os.path.join(os.path.dirname(__file__), '..', '..', 'recordings')
 )
+MIDI_TRANSCRIPTION_PATH = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'MIDI')
+)
+os.makedirs(MIDI_TRANSCRIPTION_PATH, exist_ok=True)
 
 class Module5Screen(BaseScreen):
     def __init__(self):
         super().__init__()
 
-        # transcription engine
         self.trans = Transcripteur()
-        self.transcript_done = False
+        self.selected_audio = None
+        self.selected_index = 0
 
-        # --- Title ---
-        title = QLabel(cfg.MODULE_LABEL)
+        self.layout.setContentsMargins(40, 30, 40, 30)
+        self.layout.setSpacing(20)
+
+        # Title
+        title = QLabel("Pick a song to transcribe")
         title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 32px;
+            font-weight: bold;
+            color: #5d8271;
+        """)
         self.layout.addWidget(title)
 
-        # --- Existing recordings list (3 at a time) ---
-        self.recordings      = sorted(f for f in os.listdir(RECORDINGS_PATH) if f.endswith('.wav'))
-        self.selected_index  = 0
-        self.visible_start   = 0
-        self.items_per_page  = 3
+        # Scroll area for recording list
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background: transparent;
+                width: 10px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                background: none;
+                height: 0px;
+            }
+        """)
+        self.recordings = sorted(f for f in os.listdir(RECORDINGS_PATH) if f.endswith('.wav'))
 
-        self.list_layout = QVBoxLayout()
-        self.list_layout.setSpacing(8)
-        self.layout.addLayout(self.list_layout)
-        self._refresh_recording_buttons()
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet("background: transparent;")
+        self.list_layout = QVBoxLayout()  # Renamed properly here
+        self.list_layout.setSpacing(10)
+        scroll_content.setLayout(self.list_layout)
+        scroll_area.setWidget(scroll_content)
+        self.layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
-        # --- Upload / Record stub ---
-        hr = QHBoxLayout()
-        btn_up = QPushButton("Upload Audio")
-        btn_up.clicked.connect(self._upload_audio)
-        btn_rec = QPushButton("Record Audio")
-        btn_rec.clicked.connect(self._record_audio)
-        hr.addWidget(btn_up)
-        hr.addWidget(btn_rec)
-        self.layout.addLayout(hr)
+        self._populate_recordings()
 
-        # --- Transcribe button ---
-        self.btn_trans = QPushButton("Transcribe → MIDI")
-        self.btn_trans.clicked.connect(self._do_transcribe)
-        self.layout.addWidget(self.btn_trans, alignment=Qt.AlignCenter)
+        # Transcribe button
+        self.btn_transcribe = QPushButton("Transcribe → MIDI")
+        self.btn_transcribe.setFixedHeight(40)
+        self.btn_transcribe.setFixedWidth(250)
+        self.btn_transcribe.setStyleSheet("""
+            background-color: #5d8271;
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+        """)
+        self.btn_transcribe.clicked.connect(self._transcribe_selected)
+        self.layout.addWidget(self.btn_transcribe, alignment=Qt.AlignCenter)
 
-        # --- MIDI playback / save ---
-        hb2 = QHBoxLayout()
-        self.btn_play = QPushButton("▶ Play MIDI")
-        self.btn_save = QPushButton("💾 Save MIDI")
-        self.btn_play.clicked.connect(self._play_midi)
-        self.btn_save.clicked.connect(self._save_midi)
-        hb2.addWidget(self.btn_play)
-        hb2.addWidget(self.btn_save)
-        # push them down
-        self.layout.addItem(QSpacerItem(0,20, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.layout.addLayout(hb2)
+        # Success label
+        self.success_label = QLabel("")
+        self.success_label.setAlignment(Qt.AlignCenter)
+        self.success_label.setStyleSheet("""
+            color: #2e7d32;
+            font-size: 18px;
+        """)
+        self.success_label.hide()
+        self.layout.addWidget(self.success_label)
 
-        # internal state
-        self.audio_path = None
-        self.midi_path  = None
-
-    def _refresh_recording_buttons(self):
-        # clear old
+    def _populate_recordings(self):
+        # Clear existing buttons
         while self.list_layout.count():
-            w = self.list_layout.takeAt(0).widget()
-            if w: w.deleteLater()
+            item = self.list_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
 
-        end = min(self.visible_start + self.items_per_page, len(self.recordings))
-        for idx in range(self.visible_start, end):
-            fname = self.recordings[idx]
+        # Add buttons for each recording
+        for i, fname in enumerate(self.recordings):
             btn = QPushButton(fname)
-            btn.clicked.connect(lambda _, f=fname: self._select_recording(f))
-            # highlight
-            if idx == self.selected_index:
-                btn.setStyleSheet("background-color:#555; color:#fff;")
+            btn.setCursor(Qt.PointingHandCursor)
+            btn.setFlat(True)
+            btn.setFixedWidth(500)
+            btn.setStyleSheet(self._button_style(i == self.selected_index))
+            btn.clicked.connect(lambda _, f=fname, idx=i: self._select_recording(f, idx))
             self.list_layout.addWidget(btn)
 
-    def _select_recording(self, fname):
-        self.selected_index = self.recordings.index(fname)
-        # adjust window
-        if self.selected_index < self.visible_start:
-            self.visible_start = self.selected_index
-        elif self.selected_index >= self.visible_start + self.items_per_page:
-            self.visible_start = self.selected_index - self.items_per_page + 1
+    def _button_style(self, selected):
+        base = """
+            QPushButton {
+                background-color: #5d8271;
+                color: white;
+                border-radius: 10px;
+                padding: 8px 15px;
+                text-align: left;
+                font-weight: normal;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #4a6a56;
+            }
+        """
+        if selected:
+            base += """
+                QPushButton {
+                    background-color: #34543f;
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+            """
+        return base
 
-        self.audio_path = os.path.join(RECORDINGS_PATH, fname)
-        self.transcript_done = False
-        self._refresh_recording_buttons()
+    def _select_recording(self, filename, index):
+        self.selected_audio = os.path.join(RECORDINGS_PATH, filename)
+        self.selected_index = index
+        self.success_label.hide()
+        self._populate_recordings()
 
-    def _upload_audio(self):
-        path, _ = QFileDialog.getOpenFileName(self,
-            "Select Audio File", "", "Audio Files (*.wav *.mp3)")
-        if not path:
-            return
-        self.audio_path     = path
-        self.selected_index = -1
-        self.transcript_done = False
-        self._refresh_recording_buttons()
-
-    def _record_audio(self):
-        QMessageBox.information(self, "Record", "Recording not yet implemented here.")
-
-    def _do_transcribe(self):
-        if not self.audio_path:
-            QMessageBox.warning(self, "No audio", "Please select or upload an audio file first.")
+    def _transcribe_selected(self):
+        if not self.selected_audio:
+            QMessageBox.warning(self, "No selection", "Please select a wav file to transcribe.")
             return
 
         try:
-            # feed paths into your logic
-            self.trans.selectInputFile(self.audio_path)
+            self.trans.selectInputFile(self.selected_audio)
             self.trans.getNotesFromFile()
 
-            # ask where to save
-            out, _ = QFileDialog.getSaveFileName(
-                self, "Save MIDI as…",
-                cfg.DEFAULT_OUTPUT, "MIDI Files (*.mid)")
-            if not out:
-                return
+            base_name = os.path.splitext(os.path.basename(self.selected_audio))[0]
+            output_midi = os.path.join(MIDI_TRANSCRIPTION_PATH, f"{base_name}.mid")
 
-            self.trans.selectOutputFile(out)
+            self.trans.selectOutputFile(output_midi)
             self.trans.transcript()
 
-            self.midi_path      = out
-            self.transcript_done = True
-            QMessageBox.information(self, "Success", f"MIDI saved to:\n{out}")
+            self.success_label.setText("Your wav was successfully transcribed!")
+            self.success_label.show()
 
-        except Exception as err:
-            QMessageBox.critical(self, "Transcription Error", str(err))
-
-    def _play_midi(self):
-        if not self.transcript_done:
-            QMessageBox.warning(self, "Not ready", "Please transcribe first.")
-            return
-        # TODO: hook up real playback (e.g. pygame.midi)
-        QMessageBox.information(self, "Play MIDI", "Playback not yet implemented.")
-
-    def _save_midi(self):
-        if not self.transcript_done:
-            QMessageBox.warning(self, "Not ready", "Please transcribe first.")
-            return
-        # already saved in _do_transcribe()
-        QMessageBox.information(self, "Saved", f"Already saved to:\n{self.midi_path}")
-
-    def keyPressEvent(self, ev):
-        # scroll list
-        if ev.key() == Qt.Key_Up and self.selected_index > 0:
-            self.selected_index -= 1
-            if self.selected_index < self.visible_start:
-                self.visible_start -= 1
-            self._refresh_recording_buttons()
-
-        elif ev.key() == Qt.Key_Down and self.selected_index < len(self.recordings) - 1:
-            self.selected_index += 1
-            if self.selected_index >= self.visible_start + self.items_per_page:
-                self.visible_start += 1
-            self._refresh_recording_buttons()
-
-        elif ev.key() in (Qt.Key_Return, Qt.Key_Enter):
-            if 0 <= self.selected_index < len(self.recordings):
-                self._select_recording(self.recordings[self.selected_index])
-
-        else:
-            super().keyPressEvent(ev)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to transcribe:\n{e}")

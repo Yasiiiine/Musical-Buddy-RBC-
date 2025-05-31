@@ -44,7 +44,7 @@ class Recorder(QObject):
             )
             self.stream.start()
             self.timer.start(50)
-            print(f"🎤 Recording from device {device}")
+            print(f" Recording from device {device}")
         except Exception as e:
             print(f"Error starting recording: {e}")
             self.recording = False

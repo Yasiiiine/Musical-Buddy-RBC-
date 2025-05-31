@@ -122,9 +122,9 @@ class MainWindow(QMainWindow):
             MetronomeScreen(),
             renderArea(),
             Record(),
-            Module4Screen(),
-            Module5Screen(),
-            Module6Screen(),
+            Module4Screen(),#Lecture
+            Module5Screen(),#Transcription MIDI
+            Module6Screen(),#Recommendation
             Module7Screen()
         ]
 

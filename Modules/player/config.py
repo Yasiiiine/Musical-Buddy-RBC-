@@ -1,2 +1,2 @@
 
-RECORDINGS_PATH = "..\\..\\Assets\\recordings"
+RECORDINGS_PATH = "..\\..\\recordings"

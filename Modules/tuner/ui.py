@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QFont
+from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
 import numpy as np
 import sounddevice as sd
 import threading
@@ -8,7 +8,6 @@ import threading
 from Modules.tuner.TunerObject import NoteFinder
 from AudioSettingsManager import AudioSettingsManager
 from core.styles import retro_label_font, bpm_label_style
-from core.theme_manager import ThemeManager
 
 
 class renderArea(QWidget):
@@ -25,8 +24,8 @@ class renderArea(QWidget):
         self.LabelNote.setStyleSheet(bpm_label_style())
 
         self.Layout = QVBoxLayout()
-        self.Layout.setContentsMargins(0, 30, 0, 0)
-        self.Layout.addSpacing(20)
+        self.Layout.setContentsMargins(0, 0, 0, 0)  # No vertical offset
+        self.Layout.addSpacing(150)  # Small spacing above label
         self.Layout.addWidget(self.LabelNote)
         self.Layout.addStretch(1)
         self.setLayout(self.Layout)
@@ -43,25 +42,28 @@ class renderArea(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-
-        y_offset = -50
         painter.setRenderHint(QPainter.Antialiasing)
 
+        center_x = self.width() // 2
+        center_y = self.height() // 2 + 30  # Adjust this to move everything up/down
+
         # Bars
-        bar_positions = [120, 185, 250, 315, 380]
+        bar_positions = [center_x - 130, center_x - 65, center_x, center_x + 65, center_x + 130]
+        bar_top = center_y - 20
+        bar_bottom = center_y + 20
+
         pen = QPen(QColor("#403F4C"), 12)
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
 
         for x in bar_positions:
-            painter.drawLine(x, 248 + y_offset, x, 288 + y_offset)
+            painter.drawLine(x, bar_top, x, bar_bottom)
 
         # Tuning indicator
         ecart = max(-0.5, min(0.5, self.noteTool.currentEcart))
-        center_x = self.width() // 2
         pixel_offset = ecart * 200
         indicator_x = int(center_x + pixel_offset)
-        indicator_y = int(268 + y_offset)
+        indicator_y = center_y
 
         if self.noteHeard:
             painter.setOpacity(0.25)
