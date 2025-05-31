@@ -1,15 +1,15 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QMovie, QPainter, QPixmap
-from core.theme_manager import ThemeManager
-from config import theme_manager
+import config
+from core.utils import asset_path
 
 class TransitionScreen(QWidget):
     def __init__(self):
         super().__init__()
         
         self.image_label = QLabel(self)
-        self.image_label.setPixmap(QPixmap(theme_manager.get_background_path()))
+        self.set_background()
         self.image_label.setScaledContents(True)
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setAttribute(Qt.WA_TransparentForMouseEvents)
@@ -20,6 +20,22 @@ class TransitionScreen(QWidget):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.image_label.setGeometry(self.rect())  # Centered and scaled with window
+    
+    def set_background(self):
+        """
+        Switches image_label’s pixmap to light or dark,
+        based on config.is_dark_mode.
+        """
+        if config.is_dark_mode:
+            chosen = config.bg_dark_image
+        else:
+            chosen = config.bg_light_image
+
+        pix = QPixmap(asset_path(chosen))
+        self.image_label.setPixmap(pix)
+        # Ensure it always fills the widget’s rect (resizeEvent handles geometry)
+        self.image_label.setGeometry(self.rect())
+
 class Screen(QWidget):
     def __init__(self, number, text=None, color=None):
         super().__init__()

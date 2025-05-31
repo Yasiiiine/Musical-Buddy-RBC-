@@ -41,6 +41,7 @@ class Module5Screen(BaseScreen):
         # --- Scroll area for recordings ---
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll_area.setStyleSheet("""
             QScrollArea {
                 border: none;
@@ -68,9 +69,9 @@ class Module5Screen(BaseScreen):
         scroll_area.setWidget(container)
 
         # Limit visible height to 3 items (approx 3 × 50px)
-        scroll_area.setFixedHeight(3 *  50 + 10)  # Replace Fifty with desired height constant, e.g., 50
-
+        scroll_area.setFixedHeight(3 * 50 + 10)
         self.layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
+
 
         # Spacer
         self.layout.addSpacing(20)
@@ -149,21 +150,18 @@ class Module5Screen(BaseScreen):
         # Create a button for each recording
         for i, fname in enumerate(self.recordings):
             btn = QPushButton(self._shorten(fname, 40))
-            btn.setFixedWidth(550)
-            btn.setMinimumHeight(30)  # Replace Thirty with desired button height, e.g., 30
-            btn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+            # Let the button expand horizontally to fill the scroll‐area viewport:
+            btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            btn.setMinimumHeight(30)
+
             btn.setStyleSheet(self._button_style(i == self.selected_index))
             btn.installEventFilter(self)
             btn.clicked.connect(lambda _, idx=i: self._on_select(idx))
-            # Container to center horizontally
-            wrapper = QWidget()
-            hl = QHBoxLayout()
-            hl.setContentsMargins(0, 0, 0, 0)
-            hl.addStretch()
-            hl.addWidget(btn)
-            hl.addStretch()
-            wrapper.setLayout(hl)
-            self.buttons_layout.addWidget(wrapper)
+
+            # Directly add the button; it will stretch to the layout’s width
+            self.buttons_layout.addWidget(btn)
+
 
     def _shorten(self, text: str, max_len: int) -> str:
         return text if len(text) <= max_len else text[: max_len - 3] + "..."
@@ -212,21 +210,20 @@ class Module5Screen(BaseScreen):
             self._on_transcribe()
         else:
             super().keyPressEvent(ev)
-
+            
     def eventFilter(self, source, event):
         # Hover highlights and moves selection
         if event.type() == QEvent.Enter and isinstance(source, QPushButton):
+            # Loop through each button directly (no wrappers)
             for i in range(self.buttons_layout.count()):
-                wrapper = self.buttons_layout.itemAt(i).widget()
-                if wrapper:
-                    btn = wrapper.layout().itemAt(1).widget()
-                    if btn == source and self.selected_index != i:
-                        # Reset previous
-                        prev_wrap = self.buttons_layout.itemAt(self.selected_index).widget()
-                        prev_btn = prev_wrap.layout().itemAt(1).widget()
-                        prev_btn.setStyleSheet(self._button_style(False))
-                        # Highlight new
-                        btn.setStyleSheet(self._button_style(True))
-                        self.selected_index = i
-                        break
+                btn = self.buttons_layout.itemAt(i).widget()
+                if btn == source and self.selected_index != i:
+                    # Reset previous button’s style
+                    prev_btn = self.buttons_layout.itemAt(self.selected_index).widget()
+                    prev_btn.setStyleSheet(self._button_style(False))
+                    # Highlight new button
+                    btn.setStyleSheet(self._button_style(True))
+                    self.selected_index = i
+                    break
         return super().eventFilter(source, event)
+

@@ -7,7 +7,6 @@ from PyQt5.QtGui import QPainter, QColor, QFont, QPixmap
 import os
 
 from core.base_screen import BaseScreen
-from core.theme_manager import ThemeManager
 from Modules.metronome.logic import Timer
 import Modules.metronome.config as cfg
 from core.styles import retro_label_font, bpm_label_style
@@ -53,7 +52,6 @@ class MetronomeScreen(BaseScreen):
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setFocus()
-        ThemeManager().theme_changed.connect(self.update_background)
 
 
 

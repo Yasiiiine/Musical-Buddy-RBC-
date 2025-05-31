@@ -19,7 +19,6 @@ from Modules.transcripteurMIDI.ui import Module5Screen
 from Modules.Template6.ui import Module6Screen
 from Modules.Parametres.ui import Module7Screen
 
-
 class BootupScreen(QWidget):
     def __init__(self, on_finished_callback=None):
         super().__init__()
@@ -28,7 +27,7 @@ class BootupScreen(QWidget):
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setStyleSheet("background-color: black;")
         self.label.setScaledContents(True)
-        self.label.setAttribute(Qt.WA_TransparentForMouseEvents, True)  # <-- Add this line
+        self.label.setAttribute(Qt.WA_TransparentForMouseEvents, True)
 
         self.movie = QMovie(asset_path("BootupLM.gif"))
         self.label.setMovie(self.movie)
@@ -136,9 +135,8 @@ class MainWindow(QMainWindow):
 
         self.current_index = 2  # First real screen index
 
-        # Background image
         self.background_label = QLabel(self)
-        self.background_label.setPixmap(QPixmap(asset_path("BGLM.png")))
+        self.background_label.setPixmap(QPixmap(asset_path(config.bg_light_image)))
         self.background_label.setScaledContents(True)
         self.background_label.setGeometry(self.rect())
         self.background_label.lower()
@@ -201,8 +199,36 @@ class MainWindow(QMainWindow):
         nav_layout.addWidget(self.right_button)
 
         self.setCentralWidget(container)
+        self.set_background()
         
+    def set_background(self):
+        """
+        Switches self.background_label’s pixmap to light or dark,
+        based on config.is_dark_mode. Must be called whenever we toggle
+        theme or when the window is first shown.
+        """
+        # Choose which filename to load
+        if config.is_dark_mode:
+            chosen = config.bg_dark_image
+        else:
+            chosen = config.bg_light_image
 
+        # Load & apply it
+        px = QPixmap(asset_path(chosen))
+        self.background_label.setPixmap(px)
+
+        # Make sure the label fills the entire window
+        self.background_label.setScaledContents(True)
+        self.background_label.setGeometry(self.rect())
+
+        # Ensure it is positioned “behind” all other widgets
+        self.background_label.lower()
+        self.background_label.show()  # Always show once for any mode
+        try:
+            self.transition_screen.set_background()
+        except AttributeError:
+            # If transition_screen does not exist (unlikely), just ignore.
+            pass
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -241,7 +267,6 @@ class MainWindow(QMainWindow):
         screen = self.screens[0]
         if hasattr(screen, "start"):
             screen.start()
-
 
     def keyPressEvent(self, event):
         prev_screen = self.screens[self.current_index - 2]
@@ -311,11 +336,6 @@ class MainWindow(QMainWindow):
         if on_finished:
             anim.finished.connect(on_finished)
         anim.start()
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.background_label.setGeometry(self.rect())
-        self.center_movie_label()
 
     def center_movie_label(self):
         movie_size = self.movie.scaledSize()

@@ -3,7 +3,6 @@ from PyQt5.QtCore import Qt, QTimer, QEvent
 import os
 from Modules.player.logic import AudioPlayer
 from core.styles import retro_label_font, bpm_label_style
-from core.theme_manager import ThemeManager
 
 
 class Module4Screen(QWidget):

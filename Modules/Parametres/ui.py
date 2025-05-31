@@ -6,8 +6,7 @@ from AudioSettingsManager import AudioSettingsManager
 from core.styles import retro_label_font, bpm_label_style
 import Modules.Parametres.config as cfg
 import config
-from config import theme_manager
-from core.theme_manager import ThemeManager
+from core.audio_utils import initialize_audio_devices
 
 
 class Module7Screen(QWidget):
@@ -20,9 +19,31 @@ class Module7Screen(QWidget):
         self.label.setFont(retro_label_font(32))
         self.label.setStyleSheet(bpm_label_style())
 
+        # --- Audio Output ComboBox ---
+        self.output_selector = QComboBox()
+        self.output_selector.addItems(AudioSettingsManager.list_output_devices())
+        current_out = AudioSettingsManager.get_output_device()
+        if current_out is not None:
+            self.output_selector.setCurrentIndex(current_out)
+        self.output_selector.currentIndexChanged.connect(self.on_output_changed)
+        self.output_selector.setFixedWidth(300)
+        self.output_selector.setStyleSheet(
+            """
+            QComboBox {
+                font-size: 16px;
+                padding: 8px 12px;
+                border: 1px solid #aaa;
+                border-radius: 8px;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            """
+        )
+
         # --- Toggle Theme Button ---
         self.toggle_button = QPushButton("Toggle Theme")
-        self.toggle_button.clicked.connect(self.toggle_theme)
+        self.toggle_button.clicked.connect(self.toggle_dark_mode)
         self.toggle_button.setFixedWidth(200)
         self.toggle_button.setStyleSheet("""
             QPushButton {
@@ -38,12 +59,15 @@ class Module7Screen(QWidget):
             }
         """)
 
-        # --- Audio Input ComboBox ---
+        # --- Audio Input ComboBox (EXISTING) ---
         self.input_selector = QComboBox()
+        # Populate with all available input devices
         self.input_selector.addItems(AudioSettingsManager.list_input_devices())
+        # If the user had previously chosen one, set it as current
         current_index = AudioSettingsManager.get_input_device()
         if current_index is not None:
             self.input_selector.setCurrentIndex(current_index)
+        # When the user picks a different device, store it
         self.input_selector.currentIndexChanged.connect(
             lambda i: AudioSettingsManager.set_input_device(i)
         )
@@ -54,39 +78,53 @@ class Module7Screen(QWidget):
                 padding: 8px 12px;
                 border: 1px solid #aaa;
                 border-radius: 8px;
-                background-color: #f0f0f0;
             }
-            QComboBox QAbstractItemView {
-                selection-background-color: #5d8271;
+            QComboBox::drop-down {
+                border: none;
             }
         """)
+        
 
-        # --- Layout ---
+        # --- Layout Setup ---
         layout = QVBoxLayout()
         layout.setContentsMargins(40, 30, 40, 30)
         layout.setSpacing(20)
+
         layout.addWidget(self.label, alignment=Qt.AlignCenter)
         layout.addWidget(self.input_selector, alignment=Qt.AlignCenter)
+        layout.addWidget(self.output_selector, alignment=Qt.AlignCenter)  # <- new line
         layout.addWidget(self.toggle_button, alignment=Qt.AlignCenter)
+
         self.setLayout(layout)
+    
+    def toggle_dark_mode(self):
+        """
+        Flip the global config.is_dark_mode boolean, then ask
+        the MainWindow to re-draw its background for all modules.
+        """
+        # 1) Flip the flag
+        config.is_dark_mode = not config.is_dark_mode
 
-        # --- Theme change listener ---
-        theme_manager.theme_changed.connect(self.update_background)
+        # 2) Tell MainWindow to update its background immediately.
+        #    `self.window()` returns the top-level QMainWindow (MainWindow).
+        mw = self.window()
+        if hasattr(mw, "set_background"):
+            mw.set_background()
 
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setFocus()
+        for widget in mw.findChildren(QLabel):
+            # re‐apply style if we know this label should use bpm_label_style
+            widget.setStyleSheet(bpm_label_style())
 
-    def toggle_theme(self):
-        theme_manager.toggle_dark_mode()
-
-        # Update background in all screens
-        for i in range(self.manager.count()):
-            screen = self.manager.widget(i)
-            if hasattr(screen, "refresh_background"):
-                screen.refresh_background()
+    
+    def on_output_changed(self, index):
+        # 1) Store it in AudioSettingsManager
+        AudioSettingsManager.set_output_device(index)
+        # 2) Immediately reapply to SoundDevice
+        initialize_audio_devices()
 
     def update_background(self):
         self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
+        # (existing painting code if any…)
