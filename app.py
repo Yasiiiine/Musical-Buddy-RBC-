@@ -16,7 +16,7 @@ from Modules.tuner.ui import renderArea
 from Modules.enregistrement.ui import Record
 from Modules.player.ui import Module4Screen
 from Modules.transcripteurMIDI.ui import Module5Screen
-from Modules.Template6.ui import Module6Screen
+from Modules.Streamer.ui import Module6Screen
 from Modules.Parametres.ui import Module7Screen
 
 class BootupScreen(QWidget):
