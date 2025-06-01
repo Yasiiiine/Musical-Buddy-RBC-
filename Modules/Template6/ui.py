@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from Modules.Template6.logic import MusicPlayer
+from core.theme_manager import ThemeManager
 
 class Module6Screen(QWidget):
     def __init__(self):
