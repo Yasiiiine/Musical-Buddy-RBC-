@@ -5,15 +5,15 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QPushButton, QScrollArea,
     QHBoxLayout, QSizePolicy, QMessageBox
 )
-from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent, pyqtSlot, QTimer
 from core.base_screen import BaseScreen
 from core.styles import retro_label_font, bpm_label_style
 from Modules.transcripteurMIDI.logic import Transcripteur
+from Modules.transcripteurMIDI.config import RECORDINGS_PATH, OUTPUT_DIR
 
-RECORDINGS_PATH = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'recordings')
-)
+# Ensure directories exist
 os.makedirs(RECORDINGS_PATH, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
 class Module5Screen(BaseScreen):
@@ -72,7 +72,6 @@ class Module5Screen(BaseScreen):
         scroll_area.setFixedHeight(3 * 50 + 10)
         self.layout.addWidget(scroll_area, alignment=Qt.AlignHCenter)
 
-
         # Spacer
         self.layout.addSpacing(20)
 
@@ -115,6 +114,31 @@ class Module5Screen(BaseScreen):
         self.setFocus()
 
         self._populate_recording_buttons()
+
+        # Connect to recording signals after initialization
+        QTimer.singleShot(0, self.connect_recording_signals)
+
+    def connect_recording_signals(self):
+        """Connect to recording_saved signals from enregistrement module."""
+        parent = self.parent()
+        while parent and not hasattr(parent, 'screens'):
+            parent = parent.parent()
+        if parent and hasattr(parent, 'screens'):
+            for screen in parent.screens:
+                if hasattr(screen, 'mic_recorder') and hasattr(screen, 'adc_recorder'):
+                    screen.mic_recorder.recording_saved.connect(self.add_new_recording)
+                    screen.adc_recorder.recording_saved.connect(self.add_new_recording)
+                    break
+
+    @pyqtSlot(str)
+    def add_new_recording(self, filename):
+        """Handle new recording saved by MicRecorder or ADCRecorder."""
+        if filename not in self.recordings:
+            self.recordings.append(filename)
+            self.recordings.sort()  # Maintain sorted order
+            self.selected_index = self.recordings.index(filename)  # Select new recording
+            self._populate_recording_buttons()
+            self.success_label.hide()  # Clear success message for new recording
 
     def _button_style(self, selected: bool):
         base = """
@@ -162,7 +186,6 @@ class Module5Screen(BaseScreen):
             # Directly add the button; it will stretch to the layout’s width
             self.buttons_layout.addWidget(btn)
 
-
     def _shorten(self, text: str, max_len: int) -> str:
         return text if len(text) <= max_len else text[: max_len - 3] + "..."
 
@@ -188,7 +211,7 @@ class Module5Screen(BaseScreen):
             self.transcriber.selectInputFile(audio_path)
             self.transcriber.getNotesFromFile()
             midi_name = os.path.splitext(fname)[0] + ".mid"
-            output_midi = os.path.join(RECORDINGS_PATH, midi_name)
+            output_midi = os.path.join(OUTPUT_DIR, midi_name)
             self.transcriber.selectOutputFile(output_midi)
             self.transcriber.transcript()
 
@@ -198,14 +221,6 @@ class Module5Screen(BaseScreen):
 
         except Exception as e:
             QMessageBox.critical(self, "Transcription Error", f"Failed to transcribe:\n{e}")
-
-    def add_new_recording(self, filename):
-        """Ajoute un nouvel enregistrement à la liste et met à jour l'affichage si besoin."""
-        if filename not in self.recordings:
-            self.recordings.append(filename)
-            self.recordings.sort()
-            self.selected_index = self.recordings.index(filename)
-            self._populate_recording_buttons()
 
     def keyPressEvent(self, ev):
         if ev.key() == Qt.Key_Up and self.selected_index > 0:
@@ -218,7 +233,7 @@ class Module5Screen(BaseScreen):
             self._on_transcribe()
         else:
             super().keyPressEvent(ev)
-            
+
     def eventFilter(self, source, event):
         # Hover highlights and moves selection
         if event.type() == QEvent.Enter and isinstance(source, QPushButton):
@@ -234,4 +249,3 @@ class Module5Screen(BaseScreen):
                     self.selected_index = i
                     break
         return super().eventFilter(source, event)
-
