@@ -1,9 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QProgressBar, QSizePolicy, QHBoxLayout, QScrollArea
-from PyQt5.QtCore import Qt, QTimer, QEvent
+from PyQt5.QtCore import Qt, QTimer, QEvent, pyqtSlot
 import os
 from Modules.player.logic import AudioPlayer
 from core.styles import retro_label_font, bpm_label_style
-
 
 class Module4Screen(QWidget):
     def __init__(self):
@@ -17,6 +16,7 @@ class Module4Screen(QWidget):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.recordings_dir = os.path.join(base_dir, '..', '..', 'recordings')
         self.recordings = [f for f in os.listdir(self.recordings_dir) if f.endswith('.wav')]
+        self.recordings.sort()  # Sort initially for consistent order
 
         self.player = AudioPlayer(self.recordings_dir)
 
@@ -246,3 +246,12 @@ class Module4Screen(QWidget):
         if self.progress_bar.value() >= 100:
             self.timer.stop()
             self.label.setText("Playback finished")
+
+    @pyqtSlot(str)
+    def add_new_recording(self, filename):
+        """Handle new recording saved by MicRecorder or ADCRecorder."""
+        if filename not in self.recordings:
+            self.recordings.append(filename)
+            self.recordings.sort()  # Maintain sorted order
+            self.selected_index = self.recordings.index(filename)  # Select new recording
+            self.update_recording_buttons()
