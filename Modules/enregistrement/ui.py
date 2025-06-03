@@ -7,6 +7,7 @@ from Modules.enregistrement.logic import MicRecorder, ADCRecorder
 import Modules.enregistrement.config as cfg
 from core.styles import retro_label_font, bpm_label_style
 from Modules.player.ui import Module4Screen
+from Modules.transcripteurMIDI.ui import Module5Screen
 
 class Record(QWidget):
     def __init__(self, player_widget=None):
@@ -88,7 +89,7 @@ class Record(QWidget):
         self.timer.start(50)
 
     def connect_player_signals(self):
-        """Find the correct Module4Screen instance in MainWindow.screens."""
+        """Find the correct Module4Screen and Module5Screen instance in MainWindow.screens."""
         parent = self.parent()
         while parent and not hasattr(parent, 'screens'):
             parent = parent.parent()
@@ -97,7 +98,9 @@ class Record(QWidget):
                 if isinstance(screen, Module4Screen):
                     self.mic_recorder.recording_saved.connect(screen.add_new_recording)
                     self.adc_recorder.recording_saved.connect(screen.add_new_recording)
-                    break
+                if isinstance(screen, Module5Screen):
+                    self.mic_recorder.recording_saved.connect(screen.add_new_recording)
+                    self.adc_recorder.recording_saved.connect(screen.add_new_recording)
         elif self.player_widget:
             # Fallback to provided player_widget if parent search fails
             self.mic_recorder.recording_saved.connect(self.player_widget.add_new_recording)

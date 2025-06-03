@@ -199,6 +199,14 @@ class Module5Screen(BaseScreen):
         except Exception as e:
             QMessageBox.critical(self, "Transcription Error", f"Failed to transcribe:\n{e}")
 
+    def add_new_recording(self, filename):
+        """Ajoute un nouvel enregistrement à la liste et met à jour l'affichage si besoin."""
+        if filename not in self.recordings:
+            self.recordings.append(filename)
+            self.recordings.sort()
+            self.selected_index = self.recordings.index(filename)
+            self._populate_recording_buttons()
+
     def keyPressEvent(self, ev):
         if ev.key() == Qt.Key_Up and self.selected_index > 0:
             self.selected_index -= 1
