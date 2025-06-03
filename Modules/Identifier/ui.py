@@ -50,7 +50,7 @@ class IdentifierScreen(QWidget):
         self.items_per_page = 3  # Pour la hauteur du scroll area
 
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.recordings_dir = os.path.join(base_dir, '..', '..','recordings')
+        self.recordings_dir = os.path.join(base_dir, '..', '..','recordingstestm')
         self.recordings = [f for f in os.listdir(self.recordings_dir) if f.lower().endswith(('.mp3', '.wav', '.m4a', '.aac', '.flac'))]
         self.recording_buttons = []
 

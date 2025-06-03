@@ -113,9 +113,7 @@ class MainWindow(QMainWindow):
 
         # Transition screen with BGLM
         self.transition_screen = TransitionScreen()
-        self.stack.addWidget(self.transition_screen)
-
-        # All module screens
+        self.stack.addWidget(self.transition_screen)        # All module screens
         modules = [
             Screen(0),
             MetronomeScreen(),
@@ -127,11 +125,15 @@ class MainWindow(QMainWindow):
             Module7Screen()
         ]
 
-        for screen in modules:
+        for i, screen in enumerate(modules):
             wrapper = wrap_widget(screen)
             self.screens.append(screen)
             self.screen_wrappers.append(wrapper)
             self.stack.addWidget(wrapper)
+            
+            # Connect start button signal for home screen (first screen)
+            if i == 0 and hasattr(screen, 'start_button_clicked'):
+                screen.start_button_clicked.connect(self.on_start_button_clicked)
 
         self.current_index = 2  # First real screen index
 
@@ -267,6 +269,20 @@ class MainWindow(QMainWindow):
         screen = self.screens[0]
         if hasattr(screen, "start"):
             screen.start()
+
+    def on_start_button_clicked(self):
+        """Handle start button click - navigate to next screen"""
+        # Check if we're currently on the home screen (index 0)
+        if self.current_index - 2 == 0:
+            prev_screen = self.screens[0]
+            next_index = 1  # Go to the next screen (MetronomeScreen)
+            
+            if hasattr(prev_screen, "stop"):
+                prev_screen.stop()
+            
+            # Fade out current screen and transition to next
+            self.fade_widget(self.screen_wrappers[0], 1, 0, 250,
+                             on_finished=lambda: self.start_transition(next_index + 2))
 
     def keyPressEvent(self, event):
         prev_screen = self.screens[self.current_index - 2]

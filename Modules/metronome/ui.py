@@ -1,5 +1,5 @@
 # modules/metronome/ui.py
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import QLabel, QVBoxLayout, QSpacerItem, QSizePolicy, QPushButton, QHBoxLayout
 from PyQt5.QtMultimedia import QSoundEffect
 from PyQt5.QtCore import Qt, QUrl, QTimer
 from PyQt5.QtGui import QPainter, QColor, QFont, QPixmap
@@ -23,11 +23,30 @@ class MetronomeScreen(BaseScreen):
         self.label.setFont(retro_label_font(60))
         self.label.setStyleSheet(bpm_label_style())
 
+        # --- Boutons + et - ---
+        self.btn_plus = QPushButton("+")
+        self.btn_plus.setFixedSize(40, 40)
+        self.btn_plus.setStyleSheet("font-size: 24px; border-radius: 20px; background: #5d8271; color: white;")
+        self.btn_plus.clicked.connect(self.increase_bpm)
+
+        self.btn_minus = QPushButton("−")
+        self.btn_minus.setFixedSize(40, 40)
+        self.btn_minus.setStyleSheet("font-size: 24px; border-radius: 20px; background: #5d8271; color: white;")
+        self.btn_minus.clicked.connect(self.decrease_bpm)
+
         # --- Layout ---
         self.layout.setContentsMargins(20, 20, 20, 20)
         self.layout.setSpacing(20)
         self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        self.layout.addWidget(self.label, alignment=Qt.AlignCenter)
+        # Ajout des boutons juste à côté du label BPM
+        bpm_hlayout = QHBoxLayout()
+        bpm_hlayout.setSpacing(10)
+        bpm_hlayout.addStretch(1)
+        bpm_hlayout.addWidget(self.btn_minus)
+        bpm_hlayout.addWidget(self.label)
+        bpm_hlayout.addWidget(self.btn_plus)
+        bpm_hlayout.addStretch(1)
+        self.layout.addLayout(bpm_hlayout)
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed))
         self.layout.addSpacerItem(QSpacerItem(20, 70, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
@@ -104,3 +123,21 @@ class MetronomeScreen(BaseScreen):
             cy = self.height() // 2 + 40
             r = self.pulse_radius
             painter.drawEllipse(cx - r, cy - r, r * 2, r * 2)
+
+    def increase_bpm(self):
+        self.bpm = min(cfg.BPM_MAX, self.bpm + 1)
+        self.label.setText(f"BPM : {self.bpm}")
+        self.metronome.set_bpm(self.bpm)
+        if self.bpm == cfg.BPM_MAX:
+            self.pulse_color = QColor("#e74c3c")
+        else:
+            self.pulse_color = QColor("#5d8271")
+
+    def decrease_bpm(self):
+        self.bpm = max(cfg.BPM_MIN, self.bpm - 1)
+        self.label.setText(f"BPM : {self.bpm}")
+        self.metronome.set_bpm(self.bpm)
+        if self.bpm == cfg.BPM_MIN:
+            self.pulse_color = QColor("#e74c3c")
+        else:
+            self.pulse_color = QColor("#5d8271")
